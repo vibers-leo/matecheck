@@ -1,17 +1,13 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# 테스트용 미션 픽스처
 
 one:
-  title: MyString
+  title: 설거지하기
   is_completed: false
-  assigned_to: 1
   nest: one
-  repeat: MyString
-  image_url: MyString
+  repeat: daily
 
 two:
-  title: MyString
-  is_completed: false
-  assigned_to: 1
-  nest: two
-  repeat: MyString
-  image_url: MyString
+  title: 분리수거
+  is_completed: true
+  nest: one
+  repeat: weekly

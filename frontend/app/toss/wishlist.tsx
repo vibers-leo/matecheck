@@ -5,7 +5,7 @@ import { useUserStore } from '../../store/userStore';
 import { API_URL } from '../../constants/Config';
 import { translations } from '../../constants/I18n';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 
 interface WishlistItem {
     id: number;
@@ -32,14 +32,28 @@ export default function WishlistScreen() {
     const [step, setStep] = useState(1);
 
     useEffect(() => {
-        fetchItems();
+        // Use Mock Data for UI Preview
+        const MOCK_ITEMS: WishlistItem[] = [
+            { id: 1, title: '두루마리 휴지', quantity: '30롤 1팩', price: 18000, status: 'pending', requester_id: 1 },
+            { id: 2, title: '세탁 세제', quantity: '2L', price: 12000, status: 'bought', requester_id: 2 },
+            { id: 3, title: '쓰레기 봉투 (20L)', quantity: '10장', price: 5000, status: 'pending', requester_id: 1 },
+        ];
+
+        // Simulate network delay slightly for realism
+        setTimeout(() => {
+            setItems(MOCK_ITEMS);
+            setLoading(false);
+        }, 500);
     }, []);
 
     const fetchItems = async () => {
+        // Disabled real fetch for UI Preview Mode
+        /*
         try {
             const response = await fetch(`${API_URL}/nests/${nestId}/wishlist_items`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setItems(data);
             }
         } catch (error) {
@@ -47,6 +61,7 @@ export default function WishlistScreen() {
         } finally {
             setLoading(false);
         }
+        */
     };
 
     const addItem = async () => {
@@ -149,9 +164,19 @@ export default function WishlistScreen() {
     return (
         <View className="flex-1 bg-white">
             {/* Header */}
+            <Stack.Screen options={{ headerShown: false }} />
             <View className="pt-16 pb-6 px-6 bg-white border-b border-gray-50 flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4 w-10 h-10 items-center justify-center bg-gray-50 rounded-full">
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace('/toss/(tabs)/home');
+                            }
+                        }}
+                        className="mr-4 w-10 h-10 items-center justify-center bg-gray-50 rounded-full"
+                    >
                         <Ionicons name="arrow-back" size={24} color="#0F172A" />
                     </TouchableOpacity>
                     <View>
@@ -230,74 +255,76 @@ export default function WishlistScreen() {
             {/* Add Item Modal */}
             <Modal visible={modalVisible} animationType="fade" transparent>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
-                            <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
-                                <Ionicons name="close" size={24} color="#94A3B8" />
-                            </TouchableOpacity>
+                    <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <TouchableOpacity
+                            onPress={() => { setModalVisible(false); resetForm(); }}
+                            className="absolute top-5 right-5 w-10 h-10 items-center justify-center bg-gray-100 rounded-full z-50"
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <Ionicons name="close" size={24} color="#94A3B8" />
+                        </TouchableOpacity>
 
-                            <View className="mb-8 items-center">
-                                <View className="w-16 h-16 rounded-3xl bg-teal-500 items-center justify-center mb-4 shadow-lg shadow-teal-100">
-                                    <Ionicons name="cart" size={32} color="white" />
-                                </View>
-                                <Text className="text-2xl font-black text-gray-900">{t.add_item}</Text>
-                                <Text className="text-gray-400 font-bold mt-1">Step {step} of 2</Text>
+                        <View className="mb-8 items-center">
+                            <View className="w-16 h-16 rounded-3xl bg-teal-500 items-center justify-center mb-4 shadow-lg shadow-teal-100">
+                                <Ionicons name="cart" size={32} color="white" />
                             </View>
-
-                            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
-                                {step === 1 ? (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.item_name_label}</Text>
-                                        <TextInput
-                                            value={title}
-                                            onChangeText={setTitle}
-                                            autoFocus
-                                            className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold mb-4"
-                                            placeholder={t.item_name_placeholder}
-                                        />
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.quantity_label}</Text>
-                                        <TextInput
-                                            value={quantity}
-                                            onChangeText={setQuantity}
-                                            className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold"
-                                            placeholder={t.quantity_placeholder}
-                                        />
-                                    </View>
-                                ) : (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.price_label}</Text>
-                                        <TextInput
-                                            value={price}
-                                            onChangeText={setPrice}
-                                            autoFocus
-                                            keyboardType="numeric"
-                                            className="bg-gray-50 border-2 border-teal-100 rounded-2xl p-5 text-gray-900 text-3xl font-black"
-                                            placeholder="0"
-                                        />
-                                        <Text className="text-[10px] text-gray-400 text-right mt-2 font-bold uppercase tracking-widest">Est. Price (KRW)</Text>
-                                    </View>
-                                )}
-                            </ScrollView>
-
-                            <View className="flex-row gap-3">
-                                {step > 1 && (
-                                    <TouchableOpacity onPress={() => setStep(1)} className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200">
-                                        <Text className="text-gray-600 font-black">이전</Text>
-                                    </TouchableOpacity>
-                                )}
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if (step === 1) setStep(2);
-                                        else addItem();
-                                    }}
-                                    disabled={step === 1 && !title.trim()}
-                                    className={`flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg ${step === 1 && !title.trim() ? "bg-gray-200" : "bg-teal-500"}`}
-                                >
-                                    <Text className="text-white font-black">{step === 2 ? t.add_btn : "다음 단계"}</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Text className="text-2xl font-black text-gray-900">{t.add_item}</Text>
+                            <Text className="text-gray-400 font-bold mt-1">Step {step} of 2</Text>
                         </View>
-                    </TouchableWithoutFeedback>
+
+                        <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
+                            {step === 1 ? (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.item_name_label}</Text>
+                                    <TextInput
+                                        value={title}
+                                        onChangeText={setTitle}
+                                        autoFocus
+                                        className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold mb-4"
+                                        placeholder={t.item_name_placeholder}
+                                    />
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.quantity_label}</Text>
+                                    <TextInput
+                                        value={quantity}
+                                        onChangeText={setQuantity}
+                                        className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold"
+                                        placeholder={t.quantity_placeholder}
+                                    />
+                                </View>
+                            ) : (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">{t.price_label}</Text>
+                                    <TextInput
+                                        value={price}
+                                        onChangeText={setPrice}
+                                        autoFocus
+                                        keyboardType="numeric"
+                                        className="bg-gray-50 border-2 border-teal-100 rounded-2xl p-5 text-gray-900 text-3xl font-black"
+                                        placeholder="0"
+                                    />
+                                    <Text className="text-[10px] text-gray-400 text-right mt-2 font-bold uppercase tracking-widest">Est. Price (KRW)</Text>
+                                </View>
+                            )}
+                        </ScrollView>
+
+                        <View className="flex-row gap-3">
+                            {step > 1 && (
+                                <TouchableOpacity onPress={() => setStep(1)} className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200">
+                                    <Text className="text-gray-600 font-black">이전</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (step === 1) setStep(2);
+                                    else addItem();
+                                }}
+                                disabled={step === 1 && !title.trim()}
+                                className={`flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg ${step === 1 && !title.trim() ? "bg-gray-200" : "bg-teal-500"}`}
+                            >
+                                <Text className="text-white font-black">{step === 2 ? t.add_btn : "다음 단계"}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </KeyboardAvoidingView>
             </Modal>
         </View>

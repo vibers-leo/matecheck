@@ -1,5 +1,8 @@
 class GoalsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
     render json: @nest.goals

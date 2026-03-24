@@ -1,8 +1,20 @@
 class CalendarEventsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
-    render json: @nest.calendar_events.order(date: :asc)
+    @calendar_events = @nest.calendar_events.order(date: :asc)
+                            .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @calendar_events,
+      meta: {
+        current_page: @calendar_events.current_page,
+        total_pages: @calendar_events.total_pages,
+        total_count: @calendar_events.total_count
+      }
+    }
   end
 
   def create

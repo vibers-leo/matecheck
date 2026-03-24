@@ -1,8 +1,21 @@
 class MissionsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
-    render json: @nest.missions.includes(:assignees).order(created_at: :desc).as_json(include: :assignees)
+    # N+1 방지: includes(:assignees) 이미 적용됨
+    @missions = @nest.missions.includes(:assignees).order(created_at: :desc)
+                     .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @missions.as_json(include: :assignees),
+      meta: {
+        current_page: @missions.current_page,
+        total_pages: @missions.total_pages,
+        total_count: @missions.total_count
+      }
+    }
   end
 
   def create

@@ -57,7 +57,9 @@ end
 gem "dockerfile-rails", ">= 1.7", group: :development
 
 
-gem "aws-sdk-s3", "~> 1.211", require: false
 
 gem "nokogiri", "~> 1.19"
 gem "httparty", "~> 0.24.2"
+
+# 페이지네이션
+gem "kaminari"

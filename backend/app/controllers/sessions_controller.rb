@@ -1,6 +1,9 @@
 class SessionsController < ApplicationController
+  skip_before_action :authenticate_user!
+
   def create
-    user = User.find_by(email: params[:email])
+    # N+1 방지: nest와 nest.users를 미리 로드
+    user = User.includes(nest: :users).find_by(email: params[:email])
     
     if user && user.authenticate(params[:password])
       # Login success

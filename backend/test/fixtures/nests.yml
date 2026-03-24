@@ -1,11 +1,11 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# 테스트용 보금자리 픽스처
 
 one:
-  name: MyString
+  name: 테스트 보금자리
   theme_id: 1
-  invite_code: MyString
+  invite_code: ABC123
 
 two:
-  name: MyString
-  theme_id: 1
-  invite_code: MyString
+  name: 두번째 보금자리
+  theme_id: 2
+  invite_code: DEF456

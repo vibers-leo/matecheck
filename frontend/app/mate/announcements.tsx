@@ -28,7 +28,8 @@ export default function AnnouncementsScreen() {
         try {
             const response = await fetch(`${API_URL}/announcements`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setAnnouncements(data);
             }
         } catch (error) {

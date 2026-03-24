@@ -1,7 +1,9 @@
 class SupportTicketsController < ApplicationController
-  # Allow anonymous or check token if available. 
+  skip_before_action :authenticate_user!
+
+  # Allow anonymous or check token if available.
   # For simplicity, we assume the frontend sends what it has.
-  
+
   def create
     @ticket = SupportTicket.new(ticket_params)
     @ticket.completed = false

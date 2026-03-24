@@ -1,8 +1,20 @@
 class TransactionsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
-    render json: @nest.transactions.order(date: :desc)
+    @transactions = @nest.transactions.order(date: :desc)
+                         .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @transactions,
+      meta: {
+        current_page: @transactions.current_page,
+        total_pages: @transactions.total_pages,
+        total_count: @transactions.total_count
+      }
+    }
   end
 
   def create

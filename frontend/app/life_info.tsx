@@ -75,7 +75,8 @@ export default function LifeInfoScreen() {
 
             const response = await fetch(url);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setInfos(data);
             }
         } catch (error) {
@@ -91,7 +92,8 @@ export default function LifeInfoScreen() {
         try {
             const response = await fetch(`${API_URL}/life_infos/personalized?user_id=${userId}`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setRecommendedInfos(data);
             }
         } catch (error) {

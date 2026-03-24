@@ -1,9 +1,20 @@
 class HouseRulesController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
     @house_rules = @nest.house_rules.where(is_active: true).order(priority: :asc)
-    render json: @house_rules
+                        .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @house_rules,
+      meta: {
+        current_page: @house_rules.current_page,
+        total_pages: @house_rules.total_pages,
+        total_count: @house_rules.total_count
+      }
+    }
   end
 
   def create

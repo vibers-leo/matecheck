@@ -1,15 +1,25 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# 테스트용 사용자 픽스처
+# password_digest는 BCrypt로 "password123"을 해싱한 값
 
 one:
-  email: MyString
-  password_digest: MyString
-  nickname: MyString
+  email: user1@example.com
+  password_digest: <%= BCrypt::Password.create("password123") %>
+  nickname: 테스터1
   avatar_id: 1
-  nest_id: 1
+  nest: one
+  nest_status: active
 
 two:
-  email: MyString
-  password_digest: MyString
-  nickname: MyString
-  avatar_id: 1
-  nest_id: 1
+  email: user2@example.com
+  password_digest: <%= BCrypt::Password.create("password123") %>
+  nickname: 테스터2
+  avatar_id: 2
+  nest: one
+  nest_status: active
+
+pet_member:
+  nickname: 멍멍이
+  member_type: pet
+  avatar_id: 3
+  nest: one
+  nest_status: active

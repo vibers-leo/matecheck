@@ -1,4 +1,4 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# 테스트용 미션 할당 픽스처
 
 one:
   mission: one

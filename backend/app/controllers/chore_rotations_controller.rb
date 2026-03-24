@@ -1,14 +1,27 @@
 class ChoreRotationsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
     @chore_rotations = @nest.chore_rotations.order(next_rotation_date: :asc)
-    render json: @chore_rotations.map { |rotation|
-      current_member = @nest.members.find_by(id: rotation.current_assignee_id)
-      rotation.as_json.merge(
-        current_assignee_name: current_member&.nickname || 'Unassigned',
-        current_assignee_avatar: current_member&.avatar_id || 0
-      )
+                            .page(params[:page]).per(params[:per_page] || 20)
+    # N+1 방지: 멤버를 한 번만 로드하고 해시로 조회
+    members_by_id = @nest.members.index_by(&:id)
+    render json: {
+      data: @chore_rotations.map { |rotation|
+        current_member = members_by_id[rotation.current_assignee_id]
+        rotation.as_json.merge(
+          current_assignee_name: current_member&.nickname || 'Unassigned',
+          current_assignee_avatar: current_member&.avatar_id || 0
+        )
+      },
+      meta: {
+        current_page: @chore_rotations.current_page,
+        total_pages: @chore_rotations.total_pages,
+        total_count: @chore_rotations.total_count
+      }
     }
   end
 

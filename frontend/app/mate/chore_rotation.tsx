@@ -54,7 +54,8 @@ export default function ChoreRotationScreen() {
         try {
             const response = await fetch(`${API_URL}/nests/${nestId}/chore_rotations`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setRotations(data);
             }
         } catch (error) {

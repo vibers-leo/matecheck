@@ -39,7 +39,8 @@ export default function WishlistScreen() {
         try {
             const response = await fetch(`${API_URL}/nests/${nestId}/wishlist_items`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setItems(data);
             }
         } catch (error) {

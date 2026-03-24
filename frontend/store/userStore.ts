@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../constants/Config';
 import { AVATARS } from '../constants/data';
+import { showSuccessToast, showErrorToast, showApiError, showValidationError } from '../utils/toast';
+import api from '../services/api';
 
 // --- Interfaces ---
 
@@ -39,6 +41,7 @@ export interface CalendarEvent {
     imageUrl?: string;
     endDate?: string; // Optional end date for events
     time?: string; // Optional time (e.g. "19:00")
+    repeat?: 'none' | 'daily' | 'weekly' | 'monthly'; // Recurring pattern
 }
 
 export interface BudgetTransaction {
@@ -99,7 +102,7 @@ interface UserState {
     nestName: string;
     nestTheme: number;
     nestAvatarId: number;
-    nestImage?: string;
+    nestImage: string;
     nestId: string;
     inviteCode: string;
     isLoggedIn: boolean;
@@ -135,7 +138,22 @@ interface UserState {
     // Application Mode
     appMode: 'matecheck' | 'roommatecheck';
 
+    // Nest Type (보금자리 유형)
+    nestType: 'dormitory' | 'couple' | 'family' | null;
+
+    // Loading States
+    isLoading: {
+        todos: boolean;
+        events: boolean;
+        transactions: boolean;
+        goals: boolean;
+        rules: boolean;
+        members: boolean;
+        anniversaries: boolean;
+    };
+
     // Actions
+    setLoading: (key: keyof UserState['isLoading'], value: boolean) => void;
     setProfile: (nickname: string, avatarId: number, id?: string) => void;
     setDetailedProfile: (region: string, birthDate: string, gender: 'male' | 'female' | '', occupation: string) => void;
     setEmail: (email: string) => void;
@@ -153,6 +171,7 @@ interface UserState {
     approveJoinRequest: (userId: string) => Promise<void>;
     setLanguage: (lang: 'ko' | 'en') => void;
     setAppMode: (mode: 'matecheck' | 'roommatecheck') => void;
+    setNestType: (type: 'dormitory' | 'couple' | 'family') => void;
 
     // Todo Actions
     addTodo: (title: string, assigneeIds?: string[], repeat?: 'none' | 'daily' | 'weekly' | 'monthly', imageUrl?: string) => Promise<void>;
@@ -164,21 +183,21 @@ interface UserState {
     deleteAccount: (password: string) => Promise<{ success: boolean, error?: string }>;
 
     // Calendar Actions
-    addEvent: (title: string, date: string, imageUrl?: string, endDate?: string, time?: string, budgetInfo?: { amount: number, category: BudgetTransaction['category'] }) => void;
+    addEvent: (title: string, date: string, imageUrl?: string, endDate?: string, time?: string, budgetInfo?: { amount: number, category: BudgetTransaction['category'] }, repeat?: 'none' | 'daily' | 'weekly' | 'monthly') => Promise<void>;
     voteEvent: (eventId: string, date: string, userId: string) => void;
-    deleteEvent: (id: string) => void;
+    deleteEvent: (id: string) => Promise<void>;
 
     // Budget Actions
-    addTransaction: (title: string, amount: number, category: BudgetTransaction['category'], date?: string) => void;
+    addTransaction: (title: string, amount: number, category: BudgetTransaction['category'], date?: string) => Promise<void>;
     setBudgetGoal: (amount: number) => void;
     addFixedExpense: (title: string, amount: number, day: number) => void;
     deleteFixedExpense: (id: string) => void;
 
     // Goal Actions
-    addGoal: (type: Goal['type'], title: string, target: number, unit: string) => void;
-    incrementGoalProgress: (id: string) => void;
-    decrementGoalProgress: (id: string) => void;
-    deleteGoal: (id: string) => void;
+    addGoal: (type: Goal['type'], title: string, target: number, unit: string) => Promise<void>;
+    incrementGoalProgress: (id: string) => Promise<void>;
+    decrementGoalProgress: (id: string) => Promise<void>;
+    deleteGoal: (id: string) => Promise<void>;
 
     // House Rule Actions
     addRule: (title: string, description: string, rule_type: string) => Promise<void>;
@@ -210,7 +229,7 @@ export const useUserStore = create<UserState>()(
             isMaster: false,
             region: '',
             birthDate: '',
-            gender: '',
+            gender: '' as 'male' | 'female' | '',
             occupation: '',
             nestName: '',
             nestTheme: 0,
@@ -235,10 +254,24 @@ export const useUserStore = create<UserState>()(
             anniversaries: [] as Anniversary[],
 
             pendingRequests: [] as User[],
-            language: 'ko',
-            appMode: 'matecheck',
+            language: 'ko' as 'ko' | 'en',
+            appMode: 'matecheck' as 'matecheck' | 'roommatecheck',
+            nestType: null as 'dormitory' | 'couple' | 'family' | null,
+
+            isLoading: {
+                todos: false,
+                events: false,
+                transactions: false,
+                goals: false,
+                rules: false,
+                members: false,
+                anniversaries: false,
+            },
 
             // Actions
+            setLoading: (key, value) => set((state) => ({
+                isLoading: { ...state.isLoading, [key]: value }
+            })),
             setProfile: (nickname, avatarId, id = '') => set({ nickname, avatarId, userId: id || useUserStore.getState().userId }),
             setDetailedProfile: (region: string, birthDate: string, gender: 'male' | 'female' | '', occupation: string) => set({ region, birthDate, gender, occupation }),
             setEmail: (userEmail) => set({ userEmail }),
@@ -261,43 +294,41 @@ export const useUserStore = create<UserState>()(
                 const { nestId } = useUserStore.getState();
                 if (!nestId) return;
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/requests`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        set({
-                            pendingRequests: data.map((u: any) => ({
-                                id: String(u.id),
-                                nickname: u.nickname,
-                                avatarId: u.avatar_id
-                            }))
-                        });
-                    }
-                } catch (error) { console.error(error); }
+                    const data = await api.get(`/nests/${nestId}/requests`);
+                    set({
+                        pendingRequests: data.map((u: any) => ({
+                            id: String(u.id),
+                            nickname: u.nickname,
+                            avatarId: u.avatar_id
+                        }))
+                    });
+                } catch (error) {
+                    console.error('가입 요청 조회 실패:', error);
+                }
             },
 
             approveJoinRequest: async (userId) => {
                 const { nestId } = useUserStore.getState();
                 if (!nestId) return;
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/approve/${userId}`, {
-                        method: 'PATCH'
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        set((state: UserState) => ({
-                            pendingRequests: state.pendingRequests.filter(u => u.id !== userId),
-                            members: data.members.map((m: any) => ({
-                                id: String(m.id),
-                                nickname: m.nickname,
-                                avatarId: m.avatar_id
-                            }))
-                        }));
-                    }
-                } catch (error) { console.error(error); }
+                    const data = await api.patch(`/nests/${nestId}/approve/${userId}`);
+                    set((state: UserState) => ({
+                        pendingRequests: state.pendingRequests.filter(u => u.id !== userId),
+                        members: data.members.map((m: any) => ({
+                            id: String(m.id),
+                            nickname: m.nickname,
+                            avatarId: m.avatar_id
+                        }))
+                    }));
+                    showSuccessToast('멤버 승인이 완료되었습니다!');
+                } catch (error) {
+                    console.error('멤버 승인 실패:', error);
+                }
             },
 
             setLanguage: (lang) => set({ language: lang }),
             setAppMode: (mode) => set({ appMode: mode }),
+            setNestType: (type: 'dormitory' | 'couple' | 'family') => set({ nestType: type }),
 
             logout: () => set({
                 nickname: '', avatarId: 0, userEmail: '', nestName: '', nestTheme: 0, nestId: '', inviteCode: '', isLoggedIn: false,
@@ -307,8 +338,12 @@ export const useUserStore = create<UserState>()(
                 fixedExpenses: [],
                 goals: [],
                 pendingRequests: [],
+                members: [],
+                rules: [],
+                anniversaries: [],
+                nestType: null,
                 language: 'ko',
-                hasSeenTutorial: false // Reset tutorial on logout? Maybe yes for demo purposes.
+                hasSeenTutorial: false
             }),
             addMember: (nickname, avatarId) => set((state: UserState) => ({
                 members: [...state.members, { id: Math.random().toString(36).substr(2, 9), nickname, avatarId }]
@@ -317,102 +352,112 @@ export const useUserStore = create<UserState>()(
             updatePassword: async (currentPassword, newPassword, confirmPassword): Promise<{ success: boolean; error?: string }> => {
                 const { userEmail } = useUserStore.getState();
                 try {
-                    const response = await fetch(`${API_URL}/users/password`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: userEmail,
-                            current_password: currentPassword,
-                            new_password: newPassword,
-                            new_password_confirmation: confirmPassword
-                        })
+                    await api.put(`/users/password`, {
+                        email: userEmail,
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                        new_password_confirmation: confirmPassword
                     });
-                    const data = await response.json();
-                    if (response.ok) return { success: true };
-                    return { success: false, error: data.errors ? data.errors.join(", ") : data.error };
-                } catch (error) { return { success: false, error: "Network error" }; }
+                    showSuccessToast('비밀번호가 변경되었습니다.');
+                    return { success: true };
+                } catch (error: any) {
+                    console.error('비밀번호 변경 실패:', error);
+                    const errorMessage = error.response?.data?.errors?.join(", ") || error.response?.data?.error || "비밀번호 변경에 실패했습니다.";
+                    return { success: false, error: errorMessage };
+                }
             },
 
             deleteAccount: async (password: string): Promise<{ success: boolean; error?: string }> => {
                 const { userEmail } = useUserStore.getState();
                 try {
+                    // DELETE with body - use fetch directly since api.delete doesn't support body
                     const response = await fetch(`${API_URL}/users`, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: userEmail, password })
                     });
+
                     if (response.ok) {
                         useUserStore.getState().logout();
+                        showSuccessToast('계정이 삭제되었습니다.');
                         return { success: true };
                     }
+
                     const data = await response.json();
-                    return { success: false, error: data.error };
-                } catch (error) { return { success: false, error: "Network error" }; }
+                    return { success: false, error: data.error || "계정 삭제에 실패했습니다." };
+                } catch (error: any) {
+                    console.error('계정 삭제 실패:', error);
+                    return { success: false, error: "네트워크 오류가 발생했습니다." };
+                }
             },
 
             addManagedMember: async (nickname, avatarId, memberType) => {
                 const { nestId } = useUserStore.getState();
                 if (!nestId) return;
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/members`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nickname, avatar_id: avatarId, member_type: memberType })
+                    const data = await api.post(`/nests/${nestId}/members`, {
+                        nickname,
+                        avatar_id: avatarId,
+                        member_type: memberType
                     });
-                    if (response.ok) {
-                        const data = await response.json();
-                        set({
-                            members: data.members.map((m: any) => ({
-                                id: String(m.id),
-                                nickname: m.nickname,
-                                avatarId: m.avatar_id,
-                                memberType: m.member_type
-                            }))
-                        });
-                    }
-                } catch (error) { console.error(error); }
+                    set({
+                        members: data.members.map((m: any) => ({
+                            id: String(m.id),
+                            nickname: m.nickname,
+                            avatarId: m.avatar_id,
+                            memberType: m.member_type
+                        }))
+                    });
+                    showSuccessToast('멤버가 추가되었습니다!');
+                } catch (error) {
+                    console.error('멤버 추가 실패:', error);
+                }
             },
 
             // Type-safe Todo Actions
             addTodo: async (title: string, assigneeIds: string[] = ['0'], repeat: 'none' | 'daily' | 'weekly' | 'monthly' = 'none', imageUrl?: string) => {
+                // 유효성 검사
+                if (!title.trim()) {
+                    showValidationError('할 일 제목을 입력해주세요.');
+                    return;
+                }
+
                 const { nestId, members } = useUserStore.getState();
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/missions`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                mission: {
-                                    title,
-                                    assigned_to: null, // Deprecated in backend for assignee_ids, but keeping for compatibility if needed? No, backend ignores it or we send both.
-                                    // Backend expects assignee_ids
-                                    assignee_ids: assigneeIds,
-                                    repeat,
-                                    image_url: imageUrl,
-                                    is_completed: false
-                                }
-                            })
+                        // ✅ 새로운 API 클라이언트 사용 (리팩토링 완료)
+                        const data = await api.post(`/nests/${nestId}/missions`, {
+                            mission: {
+                                title,
+                                assigned_to: null,
+                                assignee_ids: assigneeIds,
+                                repeat,
+                                image_url: imageUrl,
+                                is_completed: false
+                            }
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                todos: [
-                                    {
-                                        id: String(data.id),
-                                        title: data.title,
-                                        isCompleted: data.is_completed,
-                                        assignees: data.assignees ? data.assignees.map((a: any) => ({
-                                            id: String(a.id), nickname: a.nickname, avatarId: a.avatar_id, memberType: a.member_type
-                                        })) : [],
-                                        createdAt: data.created_at,
-                                        repeat: data.repeat,
-                                        imageUrl: data.image_url
-                                    },
-                                    ...state.todos
-                                ]
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
+
+                        set((state: UserState) => ({
+                            todos: [
+                                {
+                                    id: String(data.id),
+                                    title: data.title,
+                                    isCompleted: data.is_completed,
+                                    assignees: data.assignees ? data.assignees.map((a: any) => ({
+                                        id: String(a.id), nickname: a.nickname, avatarId: a.avatar_id, memberType: a.member_type
+                                    })) : [],
+                                    createdAt: data.created_at,
+                                    repeat: data.repeat,
+                                    imageUrl: data.image_url
+                                },
+                                ...state.todos
+                            ]
+                        }));
+                        showSuccessToast('할 일이 추가되었습니다!');
+                    } catch (error) {
+                        // API 클라이언트가 자동으로 에러 Toast 표시
+                        console.error('할 일 추가 실패:', error);
+                    }
                 } else {
                     // Fallback to local
                     const selectedMembers = members.filter((m: any) => assigneeIds.includes(m.id));
@@ -430,6 +475,7 @@ export const useUserStore = create<UserState>()(
                             ...state.todos
                         ]
                     }));
+                    showSuccessToast('할 일이 추가되었습니다!');
                 }
             },
 
@@ -442,23 +488,22 @@ export const useUserStore = create<UserState>()(
 
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/missions/${id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                mission: { is_completed: nextStatus }
-                            })
+                        await api.patch(`/nests/${nestId}/missions/${id}`, {
+                            mission: { is_completed: nextStatus }
                         });
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                todos: state.todos.map((t: any) =>
-                                    t.id === id
-                                        ? { ...t, isCompleted: nextStatus, completedBy: memberId }
-                                        : t
-                                ).sort((a: any, b: any) => Number(a.isCompleted) - Number(b.isCompleted))
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
+                        // ✅ api.ts가 자동으로 에러 Toast 표시 + 재시도
+                        set((state: UserState) => ({
+                            todos: state.todos.map((t: any) =>
+                                t.id === id
+                                    ? { ...t, isCompleted: nextStatus, completedBy: memberId }
+                                    : t
+                            ).sort((a: any, b: any) => Number(a.isCompleted) - Number(b.isCompleted))
+                        }));
+                        showSuccessToast(nextStatus ? '할 일을 완료했습니다!' : '할 일을 다시 활성화했습니다.');
+                    } catch (error) {
+                        console.error('할 일 토글 실패:', error);
+                        // api.ts에서 이미 showApiError() 호출했으므로 추가 Toast 불필요
+                    }
                 } else {
                     set((state: UserState) => ({
                         todos: state.todos.map((t) =>
@@ -467,6 +512,7 @@ export const useUserStore = create<UserState>()(
                                 : t
                         ).sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted))
                     }));
+                    showSuccessToast(nextStatus ? '할 일을 완료했습니다!' : '할 일을 다시 활성화했습니다.');
                 }
             },
 
@@ -474,69 +520,90 @@ export const useUserStore = create<UserState>()(
                 const { nestId } = useUserStore.getState();
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/missions/${id}`, { method: 'DELETE' });
-                        if (response.ok) {
-                            set((state: UserState) => ({ todos: state.todos.filter(todo => todo.id !== id) }));
-                        }
-                    } catch (error) { console.error(error); }
+                        await api.delete(`/nests/${nestId}/missions/${id}`);
+                        // ✅ api.ts가 자동으로 에러 Toast 표시 + 재시도
+                        set((state: UserState) => ({ todos: state.todos.filter(todo => todo.id !== id) }));
+                        showSuccessToast('할 일이 삭제되었습니다.');
+                    } catch (error) {
+                        console.error('할 일 삭제 실패:', error);
+                        // api.ts에서 이미 showApiError() 호출했으므로 추가 Toast 불필요
+                    }
                 } else {
                     set((state: UserState) => ({ todos: state.todos.filter(todo => todo.id !== id) }));
+                    showSuccessToast('할 일이 삭제되었습니다.');
                 }
             },
 
             // Calendar Actions
-            addEvent: async (title: string, date: string, imageUrl?: string, endDate?: string, time?: string, budgetInfo?: { amount: number, category: BudgetTransaction['category'] }) => {
-                const { nestId, avatarId, addTransaction } = useUserStore.getState();
-                if (nestId) {
-                    try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/calendar_events`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                calendar_event: {
-                                    title, date, end_date: endDate,
-                                    creator_id: avatarId, image_url: imageUrl,
-                                    event_type: 'event',
-                                    time // Added time
-                                }
-                            })
-                        });
-                        const data = await response.json();
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                events: [...state.events, {
-                                    id: String(data.id),
-                                    title: data.title,
-                                    date: data.date,
-                                    endDate: data.end_date,
-                                    type: data.event_type || 'event',
-                                    votes: {},
-                                    creatorId: String(data.creator_id),
-                                    imageUrl: data.image_url,
-                                    time: data.time
-                                }]
-                            }));
+            addEvent: async (title: string, date: string, imageUrl?: string, endDate?: string, time?: string, budgetInfo?: { amount: number, category: BudgetTransaction['category'] }, repeat: 'none' | 'daily' | 'weekly' | 'monthly' = 'none') => {
+                const { nestId, avatarId, addTransaction, addFixedExpense, setLoading } = useUserStore.getState();
 
-                            // If budget info provided, automatically add to transactions
-                            if (budgetInfo && budgetInfo.amount > 0) {
-                                addTransaction(`${title} (일정 연동)`, budgetInfo.amount, budgetInfo.category);
+                // 1. Add Calendar Event
+                if (nestId) {
+                    setLoading('events', true);
+                    try {
+                        const data = await api.post(`/nests/${nestId}/calendar_events`, {
+                            calendar_event: {
+                                title, date, end_date: endDate,
+                                creator_id: avatarId, image_url: imageUrl,
+                                event_type: 'event',
+                                time,
+                                repeat
                             }
-                        }
-                    } catch (error) { console.error(error); }
+                        });
+                        // ✅ api.ts가 자동으로 에러 Toast 표시 + 재시도
+
+                        set((state: UserState) => ({
+                            events: [...state.events, {
+                                id: String(data.id),
+                                title: data.title,
+                                date: data.date,
+                                endDate: data.end_date,
+                                type: data.event_type || 'event',
+                                votes: {},
+                                creatorId: String(data.creator_id),
+                                imageUrl: data.image_url,
+                                time: data.time,
+                                repeat: data.repeat
+                            }]
+                        }));
+                        showSuccessToast('일정이 추가되었습니다!');
+                    } catch (error) {
+                        console.error('일정 추가 실패:', error);
+                        // api.ts에서 이미 showApiError() 호출했으므로 추가 Toast 불필요
+                    } finally {
+                        setLoading('events', false);
+                    }
                 } else {
+                    // Local fallback
                     set((state: UserState) => ({
                         events: [...state.events, {
                             id: Math.random().toString(36).substr(2, 9),
-                            title, date, endDate, type: 'vote',
-                            votes: { [date]: [String(state.avatarId)] },
+                            title, date, endDate, type: 'event', // Force type event
+                            votes: {},
                             creatorId: String(state.avatarId),
                             imageUrl,
-                            time
+                            time,
+                            repeat
                         }]
                     }));
+                }
 
-                    if (budgetInfo && budgetInfo.amount > 0) {
-                        addTransaction(`${title} (일정 연동)`, budgetInfo.amount, budgetInfo.category);
+                // 2. Budget Integration Logic
+                if (budgetInfo && budgetInfo.amount > 0) {
+                    const { amount, category } = budgetInfo;
+
+                    if (repeat === 'monthly') {
+                        // If Monthly Recurring -> Add to Fixed Expenses
+                        // Extract 'day' from date string (YYYY-MM-DD)
+                        const day = parseInt(date.split('-')[2]);
+                        addFixedExpense(title, amount, day);
+                        // Also add one-time transaction for THIS month immediately? 
+                        // Let's add it so user sees it right away in calculations
+                        addTransaction(`${title} (자동이체)`, amount, category, date);
+                    } else {
+                        // If One-time -> Add to Transactions
+                        addTransaction(`${title} (일정 연동)`, amount, category, date);
                     }
                 }
             },
@@ -563,50 +630,51 @@ export const useUserStore = create<UserState>()(
                 const { nestId } = useUserStore.getState();
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/calendar_events/${id}`, { method: 'DELETE' });
-                        if (response.ok) {
-                            set((state: UserState) => ({ events: state.events.filter(e => e.id !== id) }));
-                        }
-                    } catch (error) { console.error(error); }
+                        await api.delete(`/nests/${nestId}/calendar_events/${id}`);
+                        set((state: UserState) => ({ events: state.events.filter(e => e.id !== id) }));
+                        showSuccessToast('일정이 삭제되었습니다.');
+                    } catch (error) {
+                        console.error('일정 삭제 실패:', error);
+                    }
                 } else {
                     set((state: UserState) => ({ events: state.events.filter(e => e.id !== id) }));
+                    showSuccessToast('일정이 삭제되었습니다.');
                 }
             },
 
             // Budget Actions
             addTransaction: async (title, amount, category, date?: string) => {
-                const { nestId, avatarId } = useUserStore.getState();
+                const { nestId, avatarId, setLoading } = useUserStore.getState();
                 const transactionDate = date || new Date().toISOString().split('T')[0];
                 if (nestId) {
+                    setLoading('transactions', true);
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/transactions`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                transaction: {
-                                    title, amount, category,
-                                    date: transactionDate,
-                                    payer_id: avatarId
-                                }
-                            })
+                        const data = await api.post(`/nests/${nestId}/transactions`, {
+                            transaction: {
+                                title, amount, category,
+                                date: transactionDate,
+                                payer_id: avatarId
+                            }
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                transactions: [
-                                    {
-                                        id: String(data.id),
-                                        title: data.title,
-                                        amount: Number(data.amount),
-                                        category: data.category,
-                                        date: data.date,
-                                        payerId: String(data.payer_id)
-                                    },
-                                    ...state.transactions
-                                ]
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
+                        set((state: UserState) => ({
+                            transactions: [
+                                {
+                                    id: String(data.id),
+                                    title: data.title,
+                                    amount: Number(data.amount),
+                                    category: data.category,
+                                    date: data.date,
+                                    payerId: String(data.payer_id)
+                                },
+                                ...state.transactions
+                            ]
+                        }));
+                        showSuccessToast('거래 내역이 추가되었습니다!');
+                    } catch (error) {
+                        console.error('거래 내역 추가 실패:', error);
+                    } finally {
+                        setLoading('transactions', false);
+                    }
                 } else {
                     set((state: UserState) => ({
                         transactions: [
@@ -643,34 +711,33 @@ export const useUserStore = create<UserState>()(
 
             // Goal Actions
             addGoal: async (type, title, target, unit) => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (nestId) {
+                    setLoading('goals', true);
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/goals`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                goal: { goal_type: type, title, target, unit, current: 0 }
-                            })
+                        const data = await api.post(`/nests/${nestId}/goals`, {
+                            goal: { goal_type: type, title, target, unit, current: 0 }
                         });
-                        const data = await response.json();
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                goals: [
-                                    ...state.goals,
-                                    {
-                                        id: String(data.id),
-                                        type: data.goal_type,
-                                        title: data.title,
-                                        current: data.current,
-                                        target: data.target,
-                                        unit: data.unit
-                                    }
-                                ]
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
-                } else {
+                        set((state: UserState) => ({
+                            goals: [
+                                ...state.goals,
+                                {
+                                    id: String(data.id),
+                                    type: data.goal_type,
+                                    title: data.title,
+                                    current: data.current,
+                                    target: data.target,
+                                    unit: data.unit
+                                }
+                            ]
+                        }));
+                        showSuccessToast('목표가 추가되었습니다!');
+                    } catch (error) {
+                        console.error('목표 추가 실패:', error);
+                    } finally {
+                        setLoading('goals', false);
+                    }
+                } else{
                     set((state: UserState) => ({
                         goals: [
                             ...state.goals,
@@ -692,17 +759,16 @@ export const useUserStore = create<UserState>()(
 
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/goals/${id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ goal: { current: nextVal } })
+                        await api.patch(`/nests/${nestId}/goals/${id}`, {
+                            goal: { current: nextVal }
                         });
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                goals: state.goals.map((g: any) => g.id === id ? { ...g, current: nextVal } : g)
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
+                        set((state: UserState) => ({
+                            goals: state.goals.map((g: any) => g.id === id ? { ...g, current: nextVal } : g)
+                        }));
+                        showSuccessToast('목표 진행도가 증가했습니다!');
+                    } catch (error) {
+                        console.error('목표 진행도 증가 실패:', error);
+                    }
                 } else {
                     set((state: UserState) => ({
                         goals: state.goals.map((g: Goal) => g.id === id ? { ...g, current: nextVal } : g)
@@ -719,17 +785,16 @@ export const useUserStore = create<UserState>()(
 
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/goals/${id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ goal: { current: nextVal } })
+                        await api.patch(`/nests/${nestId}/goals/${id}`, {
+                            goal: { current: nextVal }
                         });
-                        if (response.ok) {
-                            set((state: UserState) => ({
-                                goals: state.goals.map((g: any) => g.id === id ? { ...g, current: nextVal } : g)
-                            }));
-                        }
-                    } catch (error) { console.error(error); }
+                        set((state: UserState) => ({
+                            goals: state.goals.map((g: any) => g.id === id ? { ...g, current: nextVal } : g)
+                        }));
+                        showSuccessToast('목표 진행도가 감소했습니다.');
+                    } catch (error) {
+                        console.error('목표 진행도 감소 실패:', error);
+                    }
                 } else {
                     set((state: UserState) => ({
                         goals: state.goals.map(g => g.id === id ? { ...g, current: nextVal } : g)
@@ -741,42 +806,42 @@ export const useUserStore = create<UserState>()(
                 const { nestId } = useUserStore.getState();
                 if (nestId) {
                     try {
-                        const response = await fetch(`${API_URL}/nests/${nestId}/goals/${id}`, { method: 'DELETE' });
-                        if (response.ok) {
-                            set((state: UserState) => ({ goals: state.goals.filter(g => g.id !== id) }));
-                        }
-                    } catch (error) { console.error(error); }
+                        await api.delete(`/nests/${nestId}/goals/${id}`);
+                        set((state: UserState) => ({ goals: state.goals.filter(g => g.id !== id) }));
+                        showSuccessToast('목표가 삭제되었습니다.');
+                    } catch (error) {
+                        console.error('목표 삭제 실패:', error);
+                    }
                 } else {
                     set((state: UserState) => ({ goals: state.goals.filter(g => g.id !== id) }));
+                    showSuccessToast('목표가 삭제되었습니다.');
                 }
             },
 
             // House Rule Actions Implementation
             addRule: async (title, description, rule_type) => {
-                const { nestId, rules } = useUserStore.getState();
+                const { nestId, rules, setLoading } = useUserStore.getState();
                 if (!nestId) return;
 
+                setLoading('rules', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/house_rules`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            house_rule: {
-                                title,
-                                description,
-                                rule_type,
-                                priority: rules.length + 1
-                            }
-                        })
+                    const newRule = await api.post(`/nests/${nestId}/house_rules`, {
+                        house_rule: {
+                            title,
+                            description,
+                            rule_type,
+                            priority: rules.length + 1
+                        }
                     });
-
-                    if (response.ok) {
-                        const newRule = await response.json();
-                        set((state: UserState) => ({
-                            rules: [...state.rules, newRule]
-                        }));
-                    }
-                } catch (error) { console.error(error); }
+                    set((state: UserState) => ({
+                        rules: [...state.rules, newRule]
+                    }));
+                    showSuccessToast('룰이 추가되었습니다!');
+                } catch (error) {
+                    console.error('룰 추가 실패:', error);
+                } finally {
+                    setLoading('rules', false);
+                }
             },
 
             deleteRule: async (id) => {
@@ -784,44 +849,40 @@ export const useUserStore = create<UserState>()(
                 if (!nestId) return;
 
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/house_rules/${id}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (response.ok) {
-                        set((state: UserState) => ({
-                            rules: state.rules.filter(r => r.id !== id)
-                        }));
-                    }
-                } catch (error) { console.error(error); }
+                    await api.delete(`/nests/${nestId}/house_rules/${id}`);
+                    set((state: UserState) => ({
+                        rules: state.rules.filter(r => r.id !== id)
+                    }));
+                    showSuccessToast('룰이 삭제되었습니다.');
+                } catch (error) {
+                    console.error('룰 삭제 실패:', error);
+                }
             },
 
             // Anniversary Actions Implementation
             addAnniversary: async (title, date, isRecurring, category) => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
 
+                setLoading('anniversaries', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/anniversaries`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            anniversary: {
-                                title,
-                                anniversary_date: date,
-                                is_recurring: isRecurring,
-                                category
-                            }
-                        })
+                    const newAnniversary = await api.post(`/nests/${nestId}/anniversaries`, {
+                        anniversary: {
+                            title,
+                            anniversary_date: date,
+                            is_recurring: isRecurring,
+                            category
+                        }
                     });
-
-                    if (response.ok) {
-                        const newAnniversary = await response.json();
-                        set((state: UserState) => ({
-                            anniversaries: [...state.anniversaries, newAnniversary]
-                        }));
-                    }
-                } catch (error) { console.error(error); }
+                    set((state: UserState) => ({
+                        anniversaries: [...state.anniversaries, newAnniversary]
+                    }));
+                    showSuccessToast('기념일이 추가되었습니다!');
+                } catch (error) {
+                    console.error('기념일 추가 실패:', error);
+                } finally {
+                    setLoading('anniversaries', false);
+                }
             },
 
             deleteAnniversary: async (id) => {
@@ -829,84 +890,97 @@ export const useUserStore = create<UserState>()(
                 if (!nestId) return;
 
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/anniversaries/${id}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (response.ok) {
-                        set((state: UserState) => ({
-                            anniversaries: state.anniversaries.filter(a => a.id !== id)
-                        }));
-                    }
-                } catch (error) { console.error(error); }
+                    await api.delete(`/nests/${nestId}/anniversaries/${id}`);
+                    set((state: UserState) => ({
+                        anniversaries: state.anniversaries.filter(a => a.id !== id)
+                    }));
+                    showSuccessToast('기념일이 삭제되었습니다.');
+                } catch (error) {
+                    console.error('기념일 삭제 실패:', error);
+                }
             },
 
             // Sync Implementations
             syncMissions: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('todos', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/missions`);
-                    const data = await response.json();
-                    if (response.ok) {
-                        // Map backend to frontend keys if necessary
-                        const mapped = data.map((m: any) => ({
-                            id: String(m.id),
-                            title: m.title,
-                            isCompleted: m.is_completed,
-                            assignees: m.assignees ? m.assignees.map((a: any) => ({
-                                id: String(a.id), nickname: a.nickname, avatarId: a.avatar_id, memberType: a.member_type
-                            })) : [],
-                            repeat: m.repeat || 'none',
-                            imageUrl: m.image_url,
-                            createdAt: m.created_at
-                        }));
-                        set({ todos: mapped });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/missions`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    // ✅ api.ts가 자동으로 에러 Toast 표시 + 재시도
+
+                    // Map backend to frontend keys
+                    const mapped = data.map((m: any) => ({
+                        id: String(m.id),
+                        title: m.title,
+                        isCompleted: m.is_completed,
+                        assignees: m.assignees ? m.assignees.map((a: any) => ({
+                            id: String(a.id), nickname: a.nickname, avatarId: a.avatar_id, memberType: a.member_type
+                        })) : [],
+                        repeat: m.repeat || 'none',
+                        imageUrl: m.image_url,
+                        createdAt: m.created_at
+                    }));
+                    set({ todos: mapped });
+                } catch (error) {
+                    console.error('할 일 동기화 실패:', error);
+                    // api.ts에서 이미 showApiError() 호출했으므로 추가 Toast 불필요
+                } finally {
+                    setLoading('todos', false);
+                }
             },
 
             syncEvents: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('events', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/calendar_events`);
-                    const data = await response.json();
-                    if (response.ok) {
-                        const mapped = data.map((e: any) => ({
-                            id: String(e.id),
-                            title: e.title,
-                            date: e.date,
-                            endDate: e.end_date,
-                            time: e.time,
-                            type: e.event_type || 'event',
-                            creatorId: String(e.creator_id),
-                            imageUrl: e.image_url,
-                            votes: {} // Voting logic needs dedicated table later
-                        }));
-                        set({ events: mapped });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/calendar_events`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    const mapped = data.map((e: any) => ({
+                        id: String(e.id),
+                        title: e.title,
+                        date: e.date,
+                        endDate: e.end_date,
+                        time: e.time,
+                        type: e.event_type || 'event',
+                        creatorId: String(e.creator_id),
+                        imageUrl: e.image_url,
+                        votes: {} // Voting logic needs dedicated table later
+                    }));
+                    set({ events: mapped });
+                } catch (error) {
+                    console.error('일정 동기화 실패:', error);
+                } finally {
+                    setLoading('events', false);
+                }
             },
 
             syncGoals: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('goals', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/goals`);
-                    const data = await response.json();
-                    if (response.ok) {
-                        const mapped = data.map((g: any) => ({
-                            id: String(g.id),
-                            type: g.goal_type,
-                            title: g.title,
-                            current: g.current,
-                            target: g.target,
-                            unit: g.unit
-                        }));
-                        set({ goals: mapped });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/goals`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    const mapped = data.map((g: any) => ({
+                        id: String(g.id),
+                        type: g.goal_type,
+                        title: g.title,
+                        current: g.current,
+                        target: g.target,
+                        unit: g.unit
+                    }));
+                    set({ goals: mapped });
+                } catch (error) {
+                    console.error('목표 동기화 실패:', error);
+                } finally {
+                    setLoading('goals', false);
+                }
             },
 
             syncAll: async () => {
@@ -923,12 +997,13 @@ export const useUserStore = create<UserState>()(
             },
 
             syncMembers: async () => {
-                const { nestId, setMembers } = useUserStore.getState();
+                const { nestId, setMembers, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('members', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}`);
-                    const data = await response.json();
-                    if (response.ok && data.members) {
+                    const data = await api.get(`/nests/${nestId}`);
+                    if (data.members) {
                         setMembers(data.members.map((m: any) => ({
                             id: String(m.id),
                             nickname: m.nickname,
@@ -937,52 +1012,67 @@ export const useUserStore = create<UserState>()(
                             memberType: m.member_type
                         })));
                     }
-                } catch (error) { console.error(error); }
+                } catch (error) {
+                    console.error('멤버 동기화 실패:', error);
+                } finally {
+                    setLoading('members', false);
+                }
             },
 
             syncTransactions: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('transactions', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/transactions`);
-                    const data = await response.json();
-                    if (response.ok) {
-                        const mapped = data.map((t: any) => ({
-                            id: String(t.id),
-                            title: t.title,
-                            amount: Number(t.amount),
-                            category: t.category,
-                            date: t.date,
-                            payerId: String(t.payer_id)
-                        }));
-                        set({ transactions: mapped });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/transactions`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    const mapped = data.map((t: any) => ({
+                        id: String(t.id),
+                        title: t.title,
+                        amount: Number(t.amount),
+                        category: t.category,
+                        date: t.date,
+                        payerId: String(t.payer_id)
+                    }));
+                    set({ transactions: mapped });
+                } catch (error) {
+                    console.error('거래 내역 동기화 실패:', error);
+                } finally {
+                    setLoading('transactions', false);
+                }
             },
 
             syncRules: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('rules', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/house_rules`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        // Ensure data structure matches interface
-                        set({ rules: data });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/house_rules`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    set({ rules: data });
+                } catch (error) {
+                    console.error('룰 동기화 실패:', error);
+                } finally {
+                    setLoading('rules', false);
+                }
             },
 
             syncAnniversaries: async () => {
-                const { nestId } = useUserStore.getState();
+                const { nestId, setLoading } = useUserStore.getState();
                 if (!nestId) return;
+
+                setLoading('anniversaries', true);
                 try {
-                    const response = await fetch(`${API_URL}/nests/${nestId}/anniversaries`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        set({ anniversaries: data });
-                    }
-                } catch (error) { console.error(error); }
+                    const response = await api.get(`/nests/${nestId}/anniversaries`);
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    set({ anniversaries: data });
+                } catch (error) {
+                    console.error('기념일 동기화 실패:', error);
+                } finally {
+                    setLoading('anniversaries', false);
+                }
             }
         }),
         {

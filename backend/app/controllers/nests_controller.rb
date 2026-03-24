@@ -1,6 +1,10 @@
 class NestsController < ApplicationController
+  include NestAccessible
+
+  before_action :verify_nest_access!, only: [:show]
+
   def show
-    nest = Nest.find(params[:id])
+    nest = Nest.includes(:users).find(params[:id])
     render json: nest_data(nest)
   end
 
@@ -83,13 +87,15 @@ class NestsController < ApplicationController
   private
 
   def nest_data(nest)
+    # N+1 방지: users가 이미 로드되어 있지 않으면 preload
+    active_users = nest.users.loaded? ? nest.users.select { |u| u.nest_status == 'active' } : nest.users.where(nest_status: 'active')
     {
       id: nest.id,
       name: nest.name,
       theme_id: nest.theme_id,
       image_url: nest.image_url,
       invite_code: nest.invite_code,
-      members: nest.users.where(nest_status: 'active').map { |u| { id: u.id, nickname: u.nickname, avatar_id: u.avatar_id, member_type: u.member_type } }
+      members: active_users.map { |u| { id: u.id, nickname: u.nickname, avatar_id: u.avatar_id, member_type: u.member_type } }
     }
   end
 end

@@ -1,4 +1,6 @@
 class LifeInfosController < ApplicationController
+  skip_before_action :authenticate_user!, only: [:index, :show, :sync, :personalized]
+
   def index
     @life_infos = LifeInfo.order(published_at: :desc)
     
@@ -19,7 +21,15 @@ class LifeInfosController < ApplicationController
       @life_infos = @life_infos.where("occupation IS NULL OR occupation = ?", params[:occupation])
     end
 
-    render json: @life_infos
+    @life_infos = @life_infos.page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @life_infos,
+      meta: {
+        current_page: @life_infos.current_page,
+        total_pages: @life_infos.total_pages,
+        total_count: @life_infos.total_count
+      }
+    }
   end
 
   def show

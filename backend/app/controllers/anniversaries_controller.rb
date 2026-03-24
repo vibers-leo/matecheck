@@ -1,9 +1,20 @@
 class AnniversariesController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
     @anniversaries = @nest.anniversaries.order(anniversary_date: :asc)
-    render json: @anniversaries
+                          .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @anniversaries,
+      meta: {
+        current_page: @anniversaries.current_page,
+        total_pages: @anniversaries.total_pages,
+        total_count: @anniversaries.total_count
+      }
+    }
   end
 
   def create

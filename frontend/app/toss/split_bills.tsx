@@ -65,7 +65,8 @@ export default function SplitBillsScreen() {
         try {
             const response = await fetch(`${API_URL}/nests/${nestId}/split_bills`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setBills(data);
             }
         } catch (error) {

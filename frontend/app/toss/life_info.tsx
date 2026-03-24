@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Linking, RefreshControl, Alert, TextInput, ActivityIndicator, Modal, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Linking, RefreshControl, Alert, TextInput, ActivityIndicator, Modal, TouchableWithoutFeedback, Dimensions, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../../constants/Config';
@@ -75,7 +75,8 @@ export default function LifeInfoScreen() {
 
             const response = await fetch(url);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setInfos(data);
             }
         } catch (error) {
@@ -91,7 +92,8 @@ export default function LifeInfoScreen() {
         try {
             const response = await fetch(`${API_URL}/life_infos/personalized?user_id=${userId}`);
             if (response.ok) {
-                const data = await response.json();
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : (json.data || []);
                 setRecommendedInfos(data);
             }
         } catch (error) {
@@ -309,7 +311,13 @@ export default function LifeInfoScreen() {
                             const catInfo = CATEGORIES.find(c => c.id === info.category) || CATEGORIES[0];
                             return (
                                 <Animated.View key={info.id} entering={FadeInDown.delay(index * 50).springify()} layout={Layout.springify()} className="bg-white rounded-[24px] mb-6 shadow-sm overflow-hidden border border-gray-50">
-                                    {info.image_url ? <Image source={{ uri: info.image_url }} className="w-full h-44" resizeMode="cover" /> : null}
+                                    {info.image_url ? (
+                                        <Image
+                                            source={{ uri: info.image_url }}
+                                            style={{ width: '100%', height: 176 }}
+                                            resizeMode="cover"
+                                        />
+                                    ) : null}
                                     <View className="p-6">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <View className={`${catInfo.lightColor} px-2.5 py-1 rounded-lg`}>
@@ -402,7 +410,10 @@ export default function LifeInfoScreen() {
                             <View className="bg-gray-50 p-4 rounded-2xl mb-6 border border-gray-100 flex-row gap-3">
                                 <View className="mt-1">
                                     {activeInfo.image_url ? (
-                                        <Image source={{ uri: activeInfo.image_url }} className="w-10 h-10 rounded-lg bg-gray-200" />
+                                        <Image
+                                            source={{ uri: activeInfo.image_url }}
+                                            style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#E5E7EB' }}
+                                        />
                                     ) : (
                                         <View className="w-10 h-10 rounded-lg bg-white border border-gray-100 items-center justify-center">
                                             <Ionicons name="document-text" size={18} color="#6366F1" />

@@ -1,9 +1,20 @@
 class WishlistItemsController < ApplicationController
+  include NestAccessible
+
   before_action :set_nest
+  before_action :verify_nest_access!
 
   def index
     @wishlist_items = @nest.wishlist_items.order(created_at: :desc)
-    render json: @wishlist_items
+                           .page(params[:page]).per(params[:per_page] || 20)
+    render json: {
+      data: @wishlist_items,
+      meta: {
+        current_page: @wishlist_items.current_page,
+        total_pages: @wishlist_items.total_pages,
+        total_count: @wishlist_items.total_count
+      }
+    }
   end
 
   def create
