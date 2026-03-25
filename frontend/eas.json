@@ -1,25 +1,66 @@
 {
     "cli": {
-        "version": ">= 5.9.1"
+        "version": ">= 13.2.0",
+        "appVersionSource": "remote"
     },
     "build": {
         "development": {
             "developmentClient": true,
-            "distribution": "internal"
+            "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_APP_ENV": "development"
+            },
+            "ios": {
+                "simulator": true
+            },
+            "android": {
+                "buildType": "apk"
+            }
         },
         "preview": {
             "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_APP_ENV": "staging",
+                "EXPO_PUBLIC_API_URL": "http://matecheck.vibers.co.kr",
+                "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
+                "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "true"
+            },
+            "ios": {
+                "simulator": false,
+                "buildConfiguration": "Release"
+            },
             "android": {
                 "buildType": "apk"
             }
         },
         "production": {
+            "env": {
+                "EXPO_PUBLIC_APP_ENV": "production",
+                "EXPO_PUBLIC_API_URL_PRODUCTION": "http://matecheck.vibers.co.kr",
+                "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
+                "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "true"
+            },
+            "ios": {
+                "buildConfiguration": "Release",
+                "autoIncrement": "buildNumber"
+            },
             "android": {
-                "buildType": "app-bundle"
+                "buildType": "app-bundle",
+                "autoIncrement": "versionCode"
             }
         }
     },
     "submit": {
-        "production": {}
+        "production": {
+            "ios": {
+                "appleId": "juuuno@naver.com",
+                "ascAppId": "6760953978",
+                "appleTeamId": "84SS43LYKR"
+            },
+            "android": {
+                "serviceAccountKeyPath": "./google-play-service-account.json",
+                "track": "internal"
+            }
+        }
     }
 }

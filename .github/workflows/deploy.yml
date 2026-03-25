@@ -22,9 +22,9 @@ jobs:
              git stash --include-untracked 2>/dev/null; \
              git pull origin main && \
              cd backend && \
-             docker compose build --no-cache matecheck-api && \
-             docker compose up -d --force-recreate matecheck-api && \
+             docker compose -f docker-compose.yml build --no-cache matecheck-api && \
+             docker compose -f docker-compose.yml up -d --force-recreate matecheck-api && \
              sleep 10 && \
-             docker compose exec -T matecheck-api bundle exec rails db:migrate && \
-             docker compose ps && \
+             docker compose -f docker-compose.yml exec -T matecheck-api bundle exec rails db:migrate && \
+             docker compose -f docker-compose.yml ps && \
              echo '✅ MateCheck 배포 완료'"
