@@ -19,6 +19,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.NCP_USER }}@${{ secrets.NCP_HOST }} \
             "cd /root/projects/matecheck/backend && \
+             git stash --include-untracked 2>/dev/null; \
              git pull origin main && \
              docker compose build --no-cache matecheck-api && \
              docker compose up -d --force-recreate matecheck-api && \
