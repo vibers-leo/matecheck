@@ -32,6 +32,11 @@ Rails.application.routes.draw do
     get 'personalized', on: :collection
   end
 
+  # 정책 CSV 일괄 임포트
+  resources :policy_imports, only: [:create] do
+    get :sample, on: :collection
+  end
+
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
