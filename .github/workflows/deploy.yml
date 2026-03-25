@@ -20,11 +20,13 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.NCP_USER }}@${{ secrets.NCP_HOST }} \
             "cd /root/projects/matecheck && \
              git stash --include-untracked 2>/dev/null; \
+             git checkout -- . 2>/dev/null; \
+             git clean -fd 2>/dev/null; \
              git pull origin main && \
              cd backend && \
-             docker compose -f docker-compose.yml build --no-cache matecheck-api && \
-             docker compose -f docker-compose.yml up -d --force-recreate matecheck-api && \
-             sleep 10 && \
-             docker compose -f docker-compose.yml exec -T matecheck-api bundle exec rails db:migrate && \
-             docker compose -f docker-compose.yml ps && \
+             docker compose down 2>/dev/null; \
+             docker compose up -d --build && \
+             sleep 15 && \
+             docker compose exec -T matecheck-api bundle exec rails db:migrate 2>/dev/null; \
+             docker compose ps && \
              echo '✅ MateCheck 배포 완료'"
