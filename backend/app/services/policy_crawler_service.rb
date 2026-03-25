@@ -11,12 +11,26 @@ class PolicyCrawlerService
   REGIONS = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']
 
   def self.crawl_all
-    new.crawl_feeds
+    CrawlLog.record_execution('PolicyCrawlerService') do |log|
+      crawler = new
+      new_items, skipped_count, errors = crawler.crawl_feeds
+
+      SlackNotifierService.notify_crawling_result({
+        new_count: new_items.count,
+        skipped_count: skipped_count,
+        duration: log.duration_seconds || 0,
+        errors: errors
+      })
+
+      { new_items: new_items.count, skipped_count: skipped_count, errors: errors }
+    end
   end
 
   def crawl_feeds
     results = []
-    
+    skipped = 0
+    errors = []
+
     RSS_FEEDS.each do |key, url|
       begin
         response = HTTParty.get(url)
@@ -31,13 +45,16 @@ class PolicyCrawlerService
           description_html = item.xpath('description').text
           description = description_html.gsub(/<[^>]*>/, '').strip
           pub_date = item.xpath('pubDate').text
-          
+
           # Avoid duplicates
-          next if LifeInfo.exists?(title: title)
+          if LifeInfo.exists?(title: title)
+            skipped += 1
+            next
+          end
 
           image_url = extract_image(description_html)
           category = determine_category(title, description)
-          
+
           # New: Extract profile matching data
           region = determine_region(title, description)
           age_range = determine_age_range(title, description)
@@ -58,15 +75,16 @@ class PolicyCrawlerService
             gender: gender,
             occupation: occupation
           )
-          
+
           results << life_info
         end
       rescue => e
         Rails.logger.error "Error crawling #{url}: #{e.message}"
+        errors << "#{key}: #{e.message}"
       end
     end
-    
-    results
+
+    [results, skipped, errors]
   end
 
   private
