@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   post '/signup', to: 'users#create'
   post '/login', to: 'sessions#create'
+  post '/auth/kakao', to: 'kakao_auth#create'
   patch '/profile', to: 'users#update'
   put '/users/password', to: 'users#update_password'
   delete '/users', to: 'users#destroy'

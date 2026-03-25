@@ -184,6 +184,74 @@ POST /login
 }
 ```
 
+### 카카오 로그인
+
+```
+POST /auth/kakao
+```
+
+**인증 필요**: 아니오
+
+**설명**: 모바일 앱에서 카카오 SDK로 발급받은 액세스 토큰을 전송하면, 서버가 카카오 API로 사용자 정보를 조회하고 자동 로그인/회원가입을 처리합니다.
+
+**파라미터**:
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| access_token | string | O | 카카오 SDK에서 발급받은 액세스 토큰 |
+
+**요청 예시**:
+```json
+{
+  "access_token": "카카오에서_발급받은_액세스_토큰"
+}
+```
+
+**응답 (200 OK)**:
+```json
+{
+  "message": "카카오 로그인 성공",
+  "user": {
+    "id": 1,
+    "email": "kakao_user@example.com",
+    "nickname": "카카오닉네임",
+    "avatar_id": null,
+    "provider": "kakao"
+  },
+  "nest": {
+    "id": 1,
+    "name": "우리집",
+    "theme_id": 1,
+    "invite_code": "ABC123",
+    "members": [
+      { "id": 1, "nickname": "카카오닉네임", "avatar_id": null }
+    ]
+  }
+}
+```
+
+> nest 필드는 사용자가 보금자리에 소속된 경우에만 포함됩니다.
+
+**에러 (400)**:
+```json
+{
+  "error": "카카오 액세스 토큰이 필요합니다."
+}
+```
+
+**에러 (401)**:
+```json
+{
+  "error": "카카오 인증에 실패했습니다."
+}
+```
+
+**프론트엔드 연동 가이드 (React Native / Expo)**:
+1. `@react-native-seoul/kakao-login` 또는 `expo-auth-session` 패키지 설치
+2. 카카오 SDK로 로그인 → 액세스 토큰 획득
+3. `POST /auth/kakao` 에 `{ access_token }` 전송
+4. 응답의 `user` 정보로 앱 내 상태 업데이트
+
 ---
 
 ## 사용자
