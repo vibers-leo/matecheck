@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "MateCheck",
+    "slug": "matecheck",
+    "scheme": "matecheck",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF7F50"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.matecheck.juuuno"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF7F50"
+      },
+      "package": "com.matecheck.juuuno",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "lang": "ko"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5b232716-3c32-4694-92a6-54d5762b0098"
+      }
+    }
+  }
+}
