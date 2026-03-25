@@ -48,8 +48,7 @@ COPY . .
 
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
-# Assets precompile (SECRET_KEY_BASE_DUMMY: asset 컴파일 전용 더미값)
-RUN SECRET_KEY_BASE_DUMMY=1 bundle exec rails assets:precompile
+# API-only 앱이므로 asset precompile 불필요
 
 # ── 최종 스테이지 ──────────────────────────────────────────
 FROM base
