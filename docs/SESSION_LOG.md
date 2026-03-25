@@ -53,3 +53,23 @@
 1. `cd frontend` (프로젝트 루트 이동)
 2. `npx expo start` (서버 실행)
 3. 모바일 기기의 'Expo Go' 앱으로 QR 코드 스캔.
+
+## [2026-01-27] 룸메체크(토스 모드) UI/UX 개선 및 버그 수정
+**참여자:** User, Agent (Antigravity)
+
+### 1. 주요 수정 사항
+- **입력폼 사용성 개선 (Critical Fix):**
+  - **증상:** 앱 내 모든 모달(송금, 쇼핑, 일정, 할일 등)에서 텍스트 입력창(`TextInput`)을 터치해도 포커스가 잘 잡히지 않거나 여러 번 눌러야 하는 문제 발생.
+  - **원인:** `TouchableWithoutFeedback` 컴포넌트가 모달 전체를 감싸고 있어, 내부 `TextInput`으로 가는 터치 이벤트를 가로채거나 방해함 (특히 웹 환경 및 일부 모바일 동작에서 충돌).
+  - **조치:** `budget.tsx`, `wishlist.tsx`, `plan.tsx`, `chore_rotation.tsx` 등 4개 주요 파일의 모든 모달에서 `TouchableWithoutFeedback` 래퍼 제거.
+  - **결과:** 입력창 터치 시 즉시 키보드가 활성화되며 부드러운 입력 경험 제공.
+
+- **UI 일관성 확보 (Toss Mode):**
+  - **카카오 UI 제거:** `budget.tsx` 내 "간편 송금" 모달에서 발견된 카카오톡 스타일(노란색 배경, 카카오 아이콘, 문구)을 전면 제거.
+  - **토스 스타일 통일:** 모든 송금/정산 관련 UI를 토스 고유의 파란색(`toss-blue`) 테마와 '🏦' 아이콘으로 통일하여 룸메체크 = 토스 앱 내 기능이라는 컨셉 강화.
+
+### 2. 수정 파일 목록
+1. `frontend/app/toss/(tabs)/budget.tsx`: 송금/정산/고정지출 모달 수정.
+2. `frontend/app/toss/wishlist.tsx`: 공용물품 추가 모달 수정.
+3. `frontend/app/toss/(tabs)/plan.tsx`: 일정 및 할 일 추가 모달 수정.
+4. `frontend/app/toss/chore_rotation.tsx`: 당번 규칙 추가 모달 수정.

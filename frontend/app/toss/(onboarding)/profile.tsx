@@ -41,7 +41,7 @@ export default function ProfileScreen() {
 
             if (response.ok) {
                 setProfile(nickname, selectedAvatarId, String(data.id));
-                router.push('/(onboarding)/nest_choice');
+                router.push('/(onboarding)/use_case');
             } else {
                 Alert.alert("Error", data.error || "Something went wrong.");
             }

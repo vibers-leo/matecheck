@@ -6,6 +6,7 @@ import { API_URL } from '../../../constants/Config';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { saveAuthToken, saveUserCredentials } from '../../../utils/auth';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -43,6 +44,11 @@ export default function LoginScreen() {
                 const user = data.user;
                 const nest = data.nest;
 
+                if (data.token) {
+                    await saveAuthToken(data.token);
+                    await saveUserCredentials(String(user.id), email);
+                }
+
                 if (user.nickname) {
                     setProfile(user.nickname, user.avatar_id || 0, String(user.id));
                 } else {
@@ -52,9 +58,9 @@ export default function LoginScreen() {
                 if (nest) {
                     setNest(nest.name, nest.theme_id, nest.invite_code, String(nest.id));
                     setMembers(nest.members);
-                    router.replace('/(tabs)/home');
+                    router.replace('/toss/(tabs)/home');
                 } else {
-                    router.push('/(onboarding)/nest_choice');
+                    router.push('/toss/(onboarding)/nest_choice');
                 }
             } else {
                 if (response.status === 401) {
@@ -146,8 +152,9 @@ export default function LoginScreen() {
                     <TouchableOpacity
                         onPress={handleLogin}
                         disabled={isLoading}
-                        className={`w-full py-4 rounded-xl items-center shadow-lg shadow-orange-200 mb-6 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
+                        className={`w-full py-4 rounded-xl items-center mb-6 ${isLoading ? 'bg-blue-300' : 'bg-blue-500 active:bg-blue-600'
                             }`}
+                        style={{ backgroundColor: isLoading ? '#93C5FD' : '#3182F6' }}
                     >
                         <Text className="text-white font-bold text-lg">
                             {isLoading ? '로그인 중...' : '로그인하기'}
@@ -157,7 +164,7 @@ export default function LoginScreen() {
                     {/* Sign Up Link */}
                     <View className="flex-row justify-center items-center gap-2">
                         <Text className="text-gray-400 text-base">계정이 없으신가요?</Text>
-                        <Link href="/(auth)/signup" asChild>
+                        <Link href="/toss/(auth)/signup" asChild>
                             <TouchableOpacity>
                                 <Text className="text-orange-600 font-bold text-base">회원가입</Text>
                             </TouchableOpacity>

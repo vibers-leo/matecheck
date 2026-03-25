@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // import { useUserStore, Goal } from '../../../store/userStore'; // Removed duplicate
 import { cn } from '../../../lib/utils';
 import { THEMES } from '../../../constants/data';
@@ -10,6 +10,7 @@ import { API_URL } from '../../../constants/Config';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import TutorialOverlay from '../../../components/TutorialOverlay';
 import { Dimensions } from 'react-native';
+import { TDS_COLORS, TDS_TYPOGRAPHY } from '../../../constants/DesignTokens';
 
 const { width } = Dimensions.get('window');
 
@@ -177,7 +178,8 @@ export default function RulesScreen() {
                         key={goal.id}
                         entering={FadeInUp.delay(index * 100)}
                         layout={Layout.springify()}
-                        className="bg-white p-5 rounded-2xl mb-3 shadow-sm border border-gray-100"
+                        className="bg-white p-5 rounded-[24px] mb-3 shadow-sm"
+                        style={Platform.select({ web: { boxShadow: '0 2px 12px rgba(0,0,0,0.03)' } })}
                     >
                         <View className="flex-row justify-between items-center mb-3">
                             <View className="flex-1 flex-row items-center mr-2">
@@ -233,24 +235,25 @@ export default function RulesScreen() {
     };
 
     return (
-        <View className="flex-1 bg-gray-50">
-            {/* Header (Modern Simple Style) */}
-            <View className="pt-12 pb-6 px-6 bg-white shadow-sm rounded-b-[40px] z-20 mb-6 flex-row justify-between items-center">
-                <View className="flex-row items-center gap-2">
-                    <Text className="text-2xl font-black text-gray-900">
+        <View className="flex-1 bg-[#F2F4F6]">
+            {/* Header (Toss Style) */}
+            <View className="pt-4 pb-4 px-6 bg-[#F2F4F6] z-10">
+                <View className="flex-row items-center justify-between">
+                    <Text className="text-[26px] font-bold text-[#191F28]" style={{ letterSpacing: -0.5 }}>
                         {language === 'ko' ? "약속" : "Promises"}
                     </Text>
-                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-1">
-                        <Ionicons name="help-circle-outline" size={24} color="#9CA3AF" />
-                    </TouchableOpacity>
+                    <View className="flex-row gap-2">
+                        <TouchableOpacity onPress={() => setShowTutorial(true)} className="bg-white p-2 rounded-full shadow-sm">
+                            <Ionicons name="help" size={20} color="#8B95A1" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleAddButtonPress}
+                            className={cn("w-10 h-10 rounded-full items-center justify-center shadow-lg shadow-blue-200", themeBg)}
+                        >
+                            <Ionicons name="add" size={24} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-
-                <TouchableOpacity
-                    onPress={handleAddButtonPress}
-                    className={cn("w-12 h-12 rounded-full items-center justify-center shadow-lg shadow-orange-200", themeBg)}
-                >
-                    <Ionicons name="add" size={28} color="white" />
-                </TouchableOpacity>
             </View>
 
             {/* Content Info */}
@@ -315,7 +318,8 @@ export default function RulesScreen() {
                                 <Animated.View
                                     key={rule.id}
                                     entering={FadeInDown.delay(index * 100)}
-                                    className="bg-white rounded-2xl p-5 mb-3 shadow-sm border border-gray-100"
+                                    className="bg-white rounded-[24px] p-5 mb-3 shadow-sm"
+                                    style={Platform.select({ web: { boxShadow: '0 2px 12px rgba(0,0,0,0.03)' } })}
                                 >
                                     <View className="flex-row items-start justify-between mb-2">
                                         <View className="flex-row items-center flex-1">

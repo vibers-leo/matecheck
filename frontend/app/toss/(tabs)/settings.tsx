@@ -17,7 +17,7 @@ export default function SettingsScreen() {
     const {
         nickname, avatarId, nestName, logout, members, nestId, inviteCode,
         pendingRequests, fetchJoinRequests, approveJoinRequest,
-        language, setLanguage, isMaster
+        language, setLanguage, isMaster, nestType, setNestType
     } = useUserStore();
     const router = useRouter();
     const t = (translations[language as keyof typeof translations] as any).settings;
@@ -146,6 +146,26 @@ export default function SettingsScreen() {
                                 icon="people"
                                 label="구성원 관리"
                                 onPress={() => router.push('/toss/member_management')}
+                            />
+                            <View className="h-[1px] bg-gray-50 mx-6" />
+                            <SettingItem
+                                icon="layers-outline"
+                                label="보금자리 유형"
+                                value={
+                                    nestType === 'dormitory' ? '🏫 기숙사' :
+                                    nestType === 'couple' ? '💑 커플·파트너' :
+                                    nestType === 'family' ? '👨‍👩‍👧‍👦 가족' : '미설정'
+                                }
+                                onPress={() => Alert.alert(
+                                    '보금자리 유형 변경',
+                                    '어떤 보금자리인가요?',
+                                    [
+                                        { text: '🏫 기숙사', onPress: () => setNestType('dormitory') },
+                                        { text: '💑 커플·파트너', onPress: () => setNestType('couple') },
+                                        { text: '👨‍👩‍👧‍👦 가족', onPress: () => setNestType('family') },
+                                        { text: '취소', style: 'cancel' },
+                                    ]
+                                )}
                             />
                             <View className="h-[1px] bg-gray-50 mx-6" />
                             <SettingItem

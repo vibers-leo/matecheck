@@ -1,167 +1,9 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Modal, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, BackHandler, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Txt, colors } from '@toss/tds-react-native';
-
-interface ExitModalProps {
-    visible: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-}
-
-export function ExitModal({ visible, onClose, onConfirm }: ExitModalProps) {
-    return (
-        <Modal
-            transparent
-            visible={visible}
-            animationType="fade"
-            onRequestClose={onClose}
-        >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <Txt typography="t4" fontWeight="bold" color={colors.grey900} style={{ marginBottom: 24, textAlign: 'center' }}>
-                        룸메이트체크를 종료할까요?
-                    </Txt>
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                            <Txt typography="t5" fontWeight="semibold" color={colors.grey700}>취소</Txt>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.confirmButton} onPress={onConfirm}>
-                            <Txt typography="t5" fontWeight="semibold" color={colors.white}>종료하기</Txt>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-        </Modal>
-    );
-}
-
-interface TossNavBarProps {
-    title?: string;
-    canGoBack?: boolean;
-}
-
-export default function TossNavBar({ title, canGoBack }: TossNavBarProps) {
-    const insets = useSafeAreaInsets();
-    const router = useRouter();
-    const [modalVisible, setModalVisible] = useState(false);
-
-    const handleExit = () => {
-        setModalVisible(true);
-    };
-
-    const confirmExit = () => {
-        setModalVisible(false);
-        BackHandler.exitApp();
-    };
-
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.toolbar}>
-                <View style={styles.leftContainer}>
-                    {canGoBack && (
-                        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                            <Ionicons name="chevron-back" size={24} color={colors.grey900} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={styles.titleContainer}>
-                    <Txt typography="t5" fontWeight="semibold" color={colors.grey900} style={{ textAlign: 'center' }}>
-                        {title || 'RoommateCheck'}
-                    </Txt>
-                </View>
-
-                <View style={styles.rightContainer}>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color={colors.grey400} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleExit} style={styles.iconButton}>
-                        <Ionicons name="close" size={24} color={colors.grey900} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <ExitModal
-                visible={modalVisible}
-                onClose={() => setModalVisible(false)}
-                onConfirm={confirmExit}
-            />
-        </View>
-    );
-}
-
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: colors.white,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.grey100,
-    },
-    toolbar: {
-        height: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-    },
-    titleContainer: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        zIndex: -1,
-    },
-    leftContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: 80,
-    },
-    rightContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        width: 80,
-        gap: 8,
-    },
-    iconButton: {
-        padding: 4,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        width: 300,
-        backgroundColor: colors.white,
-        borderRadius: 16,
-        padding: 24,
-        alignItems: 'center',
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        width: '100%',
-        gap: 12,
-    },
-    cancelButton: {
-        flex: 1,
-        backgroundColor: colors.grey100,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    confirmButton: {
-        flex: 1,
-        backgroundColor: colors.blue500,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-});
-
+import { TDS_COLORS } from '../constants/DesignTokens';
 
 interface ExitModalProps {
     visible: boolean;
@@ -210,9 +52,6 @@ export default function TossNavBar({ title, canGoBack }: TossNavBarProps) {
 
     const confirmExit = () => {
         setModalVisible(false);
-        // On Android, this exits the app.
-        // On iOS, this typically does nothing or minimizes, but apple doesn't allow programatic exit.
-        // For "Apps in Toss", it's likely a WebView closure or similar.
         BackHandler.exitApp();
     };
 
@@ -222,19 +61,21 @@ export default function TossNavBar({ title, canGoBack }: TossNavBarProps) {
                 <View style={styles.leftContainer}>
                     {canGoBack && (
                         <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-                            <Ionicons name="chevron-back" size={24} color="#191F28" />
+                            <Ionicons name="chevron-back" size={24} color={TDS_COLORS.grey900} />
                         </TouchableOpacity>
                     )}
                 </View>
 
-                <Text style={styles.title}>{title || 'RoommateCheck'}</Text>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.title} numberOfLines={1}>{title || 'RoommateCheck'}</Text>
+                </View>
 
                 <View style={styles.rightContainer}>
                     <TouchableOpacity style={styles.iconButton}>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#B0B8C1" />
+                        <Ionicons name="ellipsis-horizontal" size={22} color={TDS_COLORS.grey400} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleExit} style={styles.iconButton}>
-                        <Ionicons name="close" size={24} color="#191F28" />
+                        <Ionicons name="close" size={26} color={TDS_COLORS.grey900} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -248,11 +89,12 @@ export default function TossNavBar({ title, canGoBack }: TossNavBarProps) {
     );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F2F4F6',
+        backgroundColor: TDS_COLORS.white,
+        zIndex: 100,
     },
     toolbar: {
         height: 56,
@@ -261,32 +103,36 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
     },
+    titleContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 10,
+    },
     title: {
         fontSize: 17,
-        fontWeight: '600',
-        color: '#191F28',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        zIndex: -1, // Ensure buttons are clickable
+        fontWeight: 'bold',
+        color: TDS_COLORS.grey900,
+        letterSpacing: -0.5,
     },
     leftContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        width: 80, // Space reservation
+        width: 80,
     },
     rightContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        width: 80, // Space reservation
+        width: 80,
         gap: 8,
     },
     iconButton: {
-        padding: 4,
+        width: 32,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    // Modal Styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -294,18 +140,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContent: {
-        width: 300,
+        width: width * 0.8,
+        maxWidth: 320,
         backgroundColor: 'white',
-        borderRadius: 16,
+        borderRadius: 24,
         padding: 24,
         alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }
+        })
     },
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#191F28',
+        color: TDS_COLORS.grey900,
         marginBottom: 24,
         textAlign: 'center',
+        lineHeight: 26,
+        letterSpacing: -0.4,
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -314,26 +166,28 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         flex: 1,
-        backgroundColor: '#F2F4F6',
+        backgroundColor: TDS_COLORS.grey100,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: 14,
         alignItems: 'center',
     },
     cancelButtonText: {
-        color: '#4E5968',
+        color: TDS_COLORS.grey700,
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     confirmButton: {
         flex: 1,
-        backgroundColor: '#0064FF', // Toss Blue
+        backgroundColor: TDS_COLORS.blue,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: 14,
         alignItems: 'center',
     },
     confirmButtonText: {
         color: 'white',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
 });
+
+

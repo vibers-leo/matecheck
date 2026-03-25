@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useUserStore } from '../store/userStore';
 import { cn } from '../lib/utils';
 import { THEMES, AVATARS } from '../constants/data';
-import { Ionicons } from '@expo/vector-icons';
+// import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../constants/Config';
 import { translations, Language } from '../constants/I18n';
 import Avatar from './Avatar';
@@ -95,7 +95,7 @@ export default function ActivityModal({ visible, onClose }: ActivityModalProps) 
                             {language === 'ko' ? "알림 기록 👀" : "Notifications 👀"}
                         </Text>
                         <TouchableOpacity onPress={onClose} className="bg-gray-100 p-2 rounded-full">
-                            <Ionicons name="close" size={24} color="#4B5563" />
+                            <Text style={{ fontSize: 20, color: '#4B5563' }}>✕</Text>
                         </TouchableOpacity>
                     </View>
 

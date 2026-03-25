@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback, Dimensions, Platform, Alert, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { cn } from '../lib/utils';
 import Animated, { FadeIn, FadeInDown, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useUserStore } from '../store/userStore';
 import { translations } from '../constants/I18n';
+import { TDS_COLORS, TDS_ELEVATION } from '../constants/DesignTokens';
 
 interface FloatingActionMenuProps {
     themeBg?: string;
@@ -125,7 +126,7 @@ export default function FloatingActionMenu({ themeBg = 'bg-orange-500' }: Floati
                                 <Text className="text-gray-400 font-medium text-sm">무엇을 추가하시겠어요?</Text>
                             </View>
                             <TouchableOpacity onPress={toggleMenu} className="bg-gray-100 p-2 rounded-full">
-                                <Ionicons name="close" size={24} color="#9CA3AF" />
+                                <Text style={{ fontSize: 20, color: '#9CA3AF' }}>✕</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -151,12 +152,22 @@ export default function FloatingActionMenu({ themeBg = 'bg-orange-500' }: Floati
                                         }}
                                     >
                                         <View className={cn("w-12 h-12 rounded-2xl items-center justify-center shadow-sm", item.color)}>
-                                            <Ionicons name={(item.isMasterOnly && !isMaster ? "lock-closed" : item.icon) as any} size={24} color="white" />
+                                            <Text style={{ fontSize: 24 }}>
+                                                {(item.isMasterOnly && !isMaster) ? "🔒" :
+                                                    item.icon === 'trophy' ? '🏆' :
+                                                        item.icon === 'calendar' ? '📅' :
+                                                            item.icon === 'document-text' ? '📜' :
+                                                                item.icon === 'wallet' ? '💰' :
+                                                                    item.icon === 'refresh' ? '🔄' :
+                                                                        item.icon === 'sparkles' ? '✨' :
+                                                                            item.icon === 'cart' ? '🛒' : '•'
+                                                }
+                                            </Text>
                                         </View>
                                         <View className="flex-1">
                                             <View className="flex-row items-center gap-1">
                                                 <Text className={cn("font-bold text-base mb-0.5", item.textColor)}>{item.label}</Text>
-                                                {item.isMasterOnly && !isMaster && <Ionicons name="lock-closed" size={12} color="#9CA3AF" />}
+                                                {item.isMasterOnly && !isMaster && <Text style={{ fontSize: 12 }}>🔒</Text>}
                                             </View>
                                             <Text className="text-xs text-gray-500 font-medium" numberOfLines={1}>{item.subLabel}</Text>
                                         </View>
@@ -174,16 +185,24 @@ export default function FloatingActionMenu({ themeBg = 'bg-orange-500' }: Floati
             {/* FAB Button */}
             {!visible && (
                 <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', bottom: 120, right: 24, zIndex: 50 }}>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={toggleMenu}
-                        activeOpacity={0.8}
-                        className={cn(
-                            "w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white",
-                            isTossMode ? "bg-toss-blue shadow-blue-200" : (themeBg + " shadow-orange-200")
-                        )}
+                        style={({ pressed }) => [
+                            {
+                                width: 64,
+                                height: 64,
+                                borderRadius: 32,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: isTossMode ? TDS_COLORS.blue : '#F97316',
+                                borderWidth: 4,
+                                borderColor: TDS_COLORS.white,
+                            },
+                            pressed ? TDS_ELEVATION.fabPressed : TDS_ELEVATION.fab,
+                        ]}
                     >
-                        <Ionicons name="add" size={36} color="white" />
-                    </TouchableOpacity>
+                        <Text style={{ fontSize: 36, color: 'white' }}>+</Text>
+                    </Pressable>
                 </Animated.View>
             )}
         </>

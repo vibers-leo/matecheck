@@ -1,423 +1,580 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Platform, Modal, TouchableWithoutFeedback } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Platform, Modal, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
-import { cn } from '../../../lib/utils';
-import { AVATARS, THEMES, NEST_AVATARS } from '../../../constants/data';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { NEST_AVATARS, AVATARS } from '../../../constants/data';
+import Animated, { FadeInDown, FadeInUp, Layout, SlideInRight } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../../constants/I18n';
-import TutorialOverlay from '../../../components/TutorialOverlay';
-import FloatingActionMenu from '../../../components/FloatingActionMenu';
+// Revert to direct imports to avoid barrel file circular dependency issues
 import Avatar from '../../../components/Avatar';
 import ActivityModal from '../../../components/ActivityModal';
+import FloatingActionMenu from '../../../components/FloatingActionMenu';
+import TutorialOverlay from '../../../components/TutorialOverlay';
+import AdBanner from '../../../components/AdBanner';
+import { SkeletonCard, SkeletonList } from '../../../components/Skeleton';
 import { Stack } from 'expo-router';
-import { Txt, colors } from '@toss/tds-react-native';
+import { TDS_COLORS, TDS_TYPOGRAPHY, TDS_RADIUS, TDS_SHADOW, TDS_ELEVATION } from '../../../constants/DesignTokens';
 
-const { width, height } = Dimensions.get('window');
+// Create Animated TouchableOpacity
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
-const getDDay = (dateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(dateStr);
-    target.setHours(0, 0, 0, 0);
-
-    const diff = target.getTime() - today.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return '오늘';
-    if (days < 0) return `D+${Math.abs(days)}`;
-    return `D-${days}`;
-};
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
     const router = useRouter();
     const {
-        nickname, avatarId, nestName, nestTheme, nestId, nestAvatarId,
-        todos, events, goals, members, language: langFromStore, hasSeenTutorial, completeTutorial,
-        syncMissions, syncEvents, syncGoals, syncTransactions, isLoggedIn, hasSeenMasterTutorial, completeMasterTutorial, isMaster,
-        appMode, setAppMode
+        nestName, nestAvatarId,
+        todos, events, members, language: langFromStore,
+        isLoggedIn, hasSeenMasterTutorial, completeMasterTutorial,
+        appMode, isLoading, nestType, anniversaries
     } = useUserStore();
+
     const language = langFromStore as 'ko' | 'en';
     const t = (translations[language] as any).home;
-    const [greeting, setGreeting] = useState('');
     const [activityModalVisible, setActivityModalVisible] = useState(false);
     const [showMasterModal, setShowMasterModal] = useState(false);
     const tm = (translations[language] as any).master;
 
-    const isTossMode = appMode === 'roommatecheck';
+    // D-Day 계산 함수 (useCallback으로 메모이제이션)
+    const getDDay = useCallback((dateStr: string) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(dateStr);
+        target.setHours(0, 0, 0, 0);
+        const diff = target.getTime() - today.getTime();
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        if (days === 0) return '오늘';
+        if (days < 0) return `D+${Math.abs(days)}`;
+        return `D-${days}`;
+    }, []);
 
-    useEffect(() => {
-        if (isLoggedIn && hasSeenTutorial && !hasSeenMasterTutorial) {
-            // Delay a bit to not clash with initial animations
-            const timer = setTimeout(() => {
-                setShowMasterModal(true);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [isLoggedIn, hasSeenTutorial, hasSeenMasterTutorial]);
+    // 할 일 필터링 (useMemo로 최적화)
+    const incompleteTodos = useMemo(() =>
+        todos.filter((t: any) => !t.isCompleted).slice(0, 3),
+        [todos]
+    );
 
-    // Theme setup
-    const themeBg = THEMES[nestTheme]?.color || 'bg-orange-500';
-    const themeText = THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600';
-    const themeItemBg = THEMES[nestTheme]?.bg || 'bg-orange-50';
+    // 오늘 날짜 (useMemo로 최적화)
+    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-    // Data Aggregation
-    const incompleteTodos = todos.filter((t: any) => !t.isCompleted).slice(0, 3);
-    const todayStr = new Date().toISOString().split('T')[0];
-    const upcomingEvents = events
-        .filter((e: any) => e.date >= todayStr)
-        .sort((a: any, b: any) => a.date.localeCompare(b.date))
-        .slice(0, 2);
-
-    // Top 3 Goals (Vision or Year preferred, else any)
-    const activeGoals = goals.sort((a: any, b: any) => {
-        const order = { vision: 0, year: 1, month: 2, week: 3 };
-        return order[a.type as keyof typeof order] - order[b.type as keyof typeof order];
-    }).slice(0, 3);
-
-    useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) setGreeting(t.greeting_morning);
-        else if (hour < 18) setGreeting(t.greeting_afternoon);
-        else setGreeting(t.greeting_evening);
-
-        // Sync data if we have nestId
-        if (nestId) {
-            useUserStore.getState().syncAll();
-        }
-    }, [nestId, language]);
-
-    const SectionHeader = ({ title, onPress }: { title: string, onPress: () => void }) => (
-        <View className="flex-row justify-between items-center mb-3 mt-6">
-            <Text className="text-lg font-bold text-gray-900">{title}</Text>
-            <TouchableOpacity onPress={onPress}>
-                <Text className="text-gray-400 text-sm">{language === 'ko' ? '더보기 ›' : 'More ›'}</Text>
-            </TouchableOpacity>
-        </View>
+    // 다가오는 이벤트 (useMemo로 최적화)
+    const upcomingEvents = useMemo(() =>
+        events
+            .filter((e: any) => e.date >= todayStr)
+            .sort((a: any, b: any) => a.date.localeCompare(b.date))
+            .slice(0, 2),
+        [events, todayStr]
     );
 
     return (
-        <View className="flex-1 bg-white">
-            <Stack.Screen options={{ title: isTossMode ? "홈" : t.title }} />
-            <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
+            <Stack.Screen options={{ headerShown: false }} />
 
-                {/* Nest Header (Modern & Simple) */}
-                <View className={cn("pt-16 pb-10 px-8 rounded-b-[48px] mb-8 items-start", isTossMode ? "bg-white" : themeItemBg)}>
-                    <View className="flex-row justify-between items-center w-full mb-6">
-                        <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-sm overflow-hidden p-2 transform -rotate-3 border border-gray-50">
-                            <Image
-                                source={(NEST_AVATARS.find((a: any) => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
-                                style={{ width: '100%', height: '100%' }}
-                                resizeMode="contain"
-                            />
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Toss Style Premium Header */}
+                <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
+                    <View style={styles.headerTop}>
+                        <View style={styles.nestInfo}>
+                            <View style={styles.nestIconBox}>
+                                <Image
+                                    source={(NEST_AVATARS.find((a: any) => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
+                                    style={styles.nestIcon}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                            <Text style={styles.nestName}>{nestName}</Text>
+                            <Ionicons name="chevron-forward" size={18} color={TDS_COLORS.grey400} />
                         </View>
+
                         <TouchableOpacity
-                            onLongPress={() => {
-                                const next = isTossMode ? 'matecheck' : 'roommatecheck';
-                                setAppMode(next);
-                                Alert.alert(next === 'roommatecheck' ? '🏦 Toss Mode (RoommateCheck)' : '🏠 MateCheck Mode', '디자인 테마가 변경되었습니다.');
-                            }}
-                            onPress={() => router.push('/(tabs)/settings')}
-                            className="w-12 h-12 items-center justify-center rounded-2xl bg-gray-50/80"
+                            onPress={() => setActivityModalVisible(true)}
+                            style={styles.notifButton}
                         >
-                            <Ionicons name="settings-outline" size={24} color={isTossMode ? "#4E5968" : "#1F2937"} />
+                            <Ionicons name="notifications" size={24} color={TDS_COLORS.grey400} />
+                            <View style={styles.notifBadge} />
                         </TouchableOpacity>
                     </View>
 
-                    <View>
-                        {isTossMode ? (
-                            <>
-                                <Txt typography="t6" fontWeight="bold" color={colors.blue500} style={{ marginBottom: 4 }}>룸메체크</Txt>
-                                <Txt typography="t1" fontWeight="bold" color={colors.grey900}>{nestName}</Txt>
-                            </>
-                        ) : (
-                            <>
-                                <Text className={cn("font-bold text-sm mb-1 tracking-wide uppercase", themeText)}>
-                                    {greeting}
-                                </Text>
-                                <Text className="font-black text-gray-900 text-3xl">{nestName}</Text>
-                            </>
-                        )}
-                    </View>
-
-                    {/* Member Stack (Clean Pill) */}
-                    <View className={cn("flex-row items-center py-2.5 pl-2.5 pr-5 rounded-full mt-6 shadow-sm border", isTossMode ? "bg-toss-gray-input border-transparent" : "bg-white border-gray-100")}>
-                        <View className="flex-row -space-x-2 mr-3">
-                            {members.slice(0, 4).map((m: any, i: number) => (
+                    {/* Member Avatars Pill */}
+                    <TouchableOpacity style={styles.memberPill}>
+                        <View style={styles.avatarStack}>
+                            {members.slice(0, 3).map((m: any, i: number) => (
                                 <Avatar
                                     key={m.id}
                                     source={(AVATARS[m.avatarId] || AVATARS[0]).image}
                                     size="xs"
                                     borderColor="#FFFFFF"
-                                    borderWidth={2}
+                                    borderWidth={1.5}
                                 />
                             ))}
                         </View>
-                        <Text className="text-gray-600 font-bold text-xs">
-                            {members.length === 0 ? t.empty_mate : language === 'ko' ? `${members.length}명의 메이트` : `${members.length} Mates`}
+                        <Text style={styles.memberText}>
+                            {members.length}명의 메이트가 함께해요
                         </Text>
-                    </View>
-
-                    <TouchableOpacity
-                        className="absolute top-14 right-4 w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm"
-                        onPress={() => router.push('/(tabs)/settings')}
-                    >
-                        <Ionicons name="settings-outline" size={22} color="#1F2937" />
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
-                <View className="px-6 gap-6">
+                {/* Main Cards Section */}
+                <View style={styles.cardContainer}>
 
-                    {/* 1. Smart Briefing Card (Modern Dark) */}
-                    <Animated.View entering={FadeInUp.delay(200)} className="bg-gray-900 rounded-[32px] p-6 shadow-xl shadow-gray-200">
-                        <View className="flex-row items-center justify-between mb-6">
-                            <View className="flex-row items-center gap-3">
-                                <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center">
-                                    <Text className="text-xl">✨</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">{language === 'ko' ? "데일리 브리핑" : "Daily Briefing"}</Text>
-                                    <Text className="text-white text-lg font-bold">오늘의 체크리스트</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={() => setActivityModalVisible(true)} className="w-8 h-8 bg-gray-800 rounded-full items-center justify-center">
-                                <Ionicons name="notifications" size={16} color="white" />
-                                <View className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-gray-900" />
-                            </TouchableOpacity>
+                    {/* Loading State */}
+                    {(isLoading.todos || isLoading.events) ? (
+                        <>
+                            <SkeletonCard style={{ marginBottom: 16, backgroundColor: TDS_COLORS.blue }} />
+                            <SkeletonCard style={{ marginBottom: 16 }} />
+                            <SkeletonCard />
+                        </>
+                    ) : (
+                        <>
+                            {/* 1. Daily Briefing Premium Card */}
+                            <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.briefingCard}>
+                        <View style={styles.cardHeader}>
+                            <Text style={styles.cardLabel}>데일리 브리핑</Text>
+                            <Text style={styles.cardMainTitle}>오늘 기분 좋게,{'\n'}함께 시작해볼까요?</Text>
                         </View>
 
-                        <View className="gap-3">
-                            {/* Smart Content Logic */}
+                        <View style={styles.briefingContent}>
                             {upcomingEvents.length > 0 ? (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-orange-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">📅</Text>
+                                <TouchableOpacity style={styles.briefingItem}>
+                                    <View style={styles.briefingIconBox}>
+                                        <Text style={{ fontSize: 20 }}>📅</Text>
                                     </View>
-                                    <View className="flex-1">
-                                        <Text className="text-orange-300 font-bold text-xs mb-1">D-{getDDay(upcomingEvents[0].date).replace('D-', '')} {language === 'ko' ? "일정 예정" : "Upcoming"}</Text>
-                                        <Text className="text-white font-bold text-base" numberOfLines={1}>{upcomingEvents[0].title}</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.briefingItemLabel}>D-{getDDay(upcomingEvents[0].date).replace('D-', '')} 일정</Text>
+                                        <Text style={styles.briefingItemTitle}>{upcomingEvents[0].title}</Text>
                                     </View>
-                                </View>
-                            ) : activeGoals.length > 0 ? (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-blue-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">🏆</Text>
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-blue-300 font-bold text-xs mb-1">{language === 'ko' ? "집중 목표" : "Focus Goal"}</Text>
-                                        <Text className="text-white font-bold text-base" numberOfLines={1}>{activeGoals[0].title}</Text>
-                                        <Text className="text-gray-400 text-xs mt-1">{activeGoals[0].current}% 달성 중</Text>
-                                    </View>
-                                </View>
+                                    <Ionicons name="chevron-forward" size={16} color={TDS_COLORS.grey400} />
+                                </TouchableOpacity>
                             ) : (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-green-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">🌿</Text>
+                                <TouchableOpacity style={styles.briefingItem}>
+                                    <View style={[styles.briefingIconBox, { backgroundColor: '#E7F5E9' }]}>
+                                        <Text style={{ fontSize: 20 }}>🌿</Text>
                                     </View>
-                                    <View className="flex-1">
-                                        <Text className="text-green-300 font-bold text-xs mb-1">{language === 'ko' ? "평온한 하루" : "Peaceful Day"}</Text>
-                                        <Text className="text-white font-bold text-base">오늘 하루도 행복하게!</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.briefingItemLabel}>평온한 하루</Text>
+                                        <Text style={styles.briefingItemTitle}>아직 등록된 일정이 없어요</Text>
                                     </View>
-                                </View>
-                            )}
-
-                            {incompleteTodos.length > 0 && (
-                                <View className="bg-gray-800/50 p-4 rounded-2xl flex-row justify-between items-center">
-                                    <Text className="text-gray-400 font-medium text-sm">남은 할 일</Text>
-                                    <View className="flex-row items-center gap-2">
-                                        <Text className="text-white font-bold">{incompleteTodos.length}개</Text>
-                                        <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
-                                    </View>
-                                </View>
+                                </TouchableOpacity>
                             )}
                         </View>
                     </Animated.View>
 
-                    {/* 2. Upcoming Schedule (Clean List) */}
-                    <View>
-                        <SectionHeader title="돌아오는 일정 📅" onPress={() => router.push('/(tabs)/plan')} />
-                        {upcomingEvents.length === 0 ? (
-                            <View className="bg-gray-50 p-8 rounded-[32px] items-center justify-center border border-gray-100/50">
-                                <Text className="text-4xl mb-4 opacity-30">🗓️</Text>
-                                <Text className="text-gray-400 font-medium">등록된 일정이 없어요</Text>
-                            </View>
-                        ) : (
-                            <View className="gap-3">
-                                {upcomingEvents.slice(0, 3).map((evt: any, index: number) => {
-                                    const dday = getDDay(evt.date);
-                                    const isToday = dday === '오늘';
-
-                                    return (
-                                        <Animated.View key={evt.id} entering={FadeInDown.delay(index * 100 + 300)}
-                                            className="flex-row bg-white p-5 rounded-3xl border border-gray-100 items-center shadow-sm"
-                                        >
-                                            {/* Date Box (Modern) */}
-                                            <View className={cn("w-14 h-14 rounded-2xl items-center justify-center mr-5", isToday ? "bg-gray-900" : "bg-gray-50")}>
-                                                <Text className={cn("text-[10px] font-bold uppercase", isToday ? "text-gray-400" : "text-gray-400")}>
-                                                    {new Date(evt.date).getMonth() + 1}월
-                                                </Text>
-                                                <Text className={cn("text-xl font-black", isToday ? "text-white" : "text-gray-900")}>
-                                                    {new Date(evt.date).getDate()}
-                                                </Text>
-                                            </View>
-
-                                            {/* Content */}
-                                            <View className="flex-1 gap-1">
-                                                <View className="flex-row justify-between items-center">
-                                                    <View className={cn("px-2 py-0.5 rounded-md self-start mb-1", isToday ? "bg-red-50" : "bg-gray-100")}>
-                                                        <Text className={cn("text-[10px] font-bold", isToday ? "text-red-500" : "text-gray-500")}>{dday}</Text>
-                                                    </View>
-                                                </View>
-                                                <Text className="font-bold text-gray-900 text-base" numberOfLines={1}>{evt.title}</Text>
-                                                <Text className="text-gray-400 text-xs font-medium">
-                                                    {evt.endDate ? `${evt.date} ~ ${evt.endDate}` : 'All Day'}
-                                                </Text>
-                                            </View>
-                                        </Animated.View>
-                                    );
-                                })}
-                            </View>
-                        )}
-                        {upcomingEvents.length > 0 && (
-                            <TouchableOpacity
-                                onPress={() => router.push('/(tabs)/plan')}
-                                className="mt-4 flex-row justify-center items-center py-4 bg-gray-50 rounded-2xl active:bg-gray-100"
-                            >
-                                <Text className="text-gray-500 font-bold text-sm">전체 일정 보기</Text>
-                                <Ionicons name="arrow-forward" size={16} color="#6B7280" className="ml-2" />
+                    {/* 2. Tasks / Todos Card */}
+                    <Animated.View entering={FadeInUp.delay(400).duration(600)} style={styles.whiteCard}>
+                        <View style={styles.whiteCardHeader}>
+                            <Text style={styles.whiteCardTitle}>할 일 리스트</Text>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/plan')}>
+                                <Text style={styles.moreText}>더보기</Text>
                             </TouchableOpacity>
-                        )}
-                    </View>
+                        </View>
 
-                    {/* 3. Life Info Banner (New) */}
-                    <TouchableOpacity
-                        onPress={() => router.push('/life_info')}
-                        activeOpacity={0.9}
-                        className="bg-indigo-600 rounded-[32px] p-6 shadow-xl shadow-indigo-200 overflow-hidden relative"
-                    >
-                        {/* Background Deco */}
-                        <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-                        <View className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8" />
-
-                        <View className="flex-row items-center justify-between">
-                            <View className="flex-1 mr-4">
-                                <View className="bg-white/20 px-3 py-1 rounded-full self-start mb-3">
-                                    <Text className="text-white text-[10px] font-bold">✨ AI 맞춤 추천</Text>
+                        {incompleteTodos.length > 0 ? (
+                            incompleteTodos.map((todo: any, idx: number) => (
+                                <View key={todo.id} style={styles.todoRow}>
+                                    <View style={styles.todoCheck} />
+                                    <Text style={styles.todoText}>{todo.title}</Text>
                                 </View>
-                                <Text className="text-white text-xl font-black mb-1 leading-tight">
-                                    놓치고 있는 혜택,{'\n'}지금 바로 확인하세요!
-                                </Text>
-                                <Text className="text-indigo-200 text-xs font-medium">
-                                    내 조건에 딱 맞는 지원금을 찾아드려요
-                                </Text>
-                            </View>
-                            <View className="w-16 h-16 bg-white rounded-2xl items-center justify-center shadow-lg transform rotate-6">
-                                <Ionicons name="sparkles" size={32} color="#4F46E5" />
-                            </View>
-                        </View>
+                            ))
+                        ) : (
+                            <Text style={styles.emptyText}>오늘 할 일을 모두 마쳤어요!</Text>
+                        )}
+                    </Animated.View>
 
-                        <View className="mt-6 flex-row items-center">
-                            <Text className="text-white font-bold text-sm mr-2">생활 정보 보러가기</Text>
-                            <Ionicons name="arrow-forward" size={16} color="white" />
+                    {/* 3. nestType 기반 맞춤 배너 */}
+                    {nestType === 'couple' ? (
+                        // 커플·파트너: 가장 가까운 기념일 D-Day
+                        <AnimatedTouchableOpacity
+                            entering={FadeInUp.delay(600).duration(600)}
+                            style={[styles.checklistBanner, { backgroundColor: '#4A1942' }]}
+                            onPress={() => router.push('/(tabs)/anniversary')}
+                        >
+                            <View style={{ flex: 1 }}>
+                                <View style={[styles.checklistBannerTag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                    <Text style={styles.checklistBannerTagText}>💑 기념일</Text>
+                                </View>
+                                <Text style={styles.checklistBannerTitle}>
+                                    {anniversaries && anniversaries.length > 0
+                                        ? (() => {
+                                            const today = new Date();
+                                            today.setHours(0,0,0,0);
+                                            const next = anniversaries
+                                                .map((a: any) => {
+                                                    const d = new Date(a.anniversary_date);
+                                                    d.setFullYear(today.getFullYear());
+                                                    if (d < today) d.setFullYear(today.getFullYear() + 1);
+                                                    return { ...a, _next: d };
+                                                })
+                                                .sort((a: any, b: any) => a._next - b._next)[0];
+                                            const diff = Math.ceil((next._next.getTime() - today.getTime()) / 86400000);
+                                            return diff === 0 ? `🎉 오늘은 ${next.title}!` : `D-${diff} ${next.title}`;
+                                        })()
+                                        : '기념일을 등록해보세요'}
+                                </Text>
+                                <Text style={styles.checklistBannerSub}>함께한 소중한 날들을 기록해요</Text>
+                            </View>
+                            <View style={styles.checklistBannerIcon}>
+                                <Text style={{ fontSize: 40 }}>💝</Text>
+                            </View>
+                        </AnimatedTouchableOpacity>
+                    ) : nestType === 'family' ? (
+                        // 가족: 이번 주 가족 일정
+                        <AnimatedTouchableOpacity
+                            entering={FadeInUp.delay(600).duration(600)}
+                            style={[styles.checklistBanner, { backgroundColor: '#1A5C3A' }]}
+                            onPress={() => router.push('/(tabs)/plan')}
+                        >
+                            <View style={{ flex: 1 }}>
+                                <View style={[styles.checklistBannerTag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                    <Text style={styles.checklistBannerTagText}>👨‍👩‍👧‍👦 가족 일정</Text>
+                                </View>
+                                <Text style={styles.checklistBannerTitle}>
+                                    {upcomingEvents.length > 0
+                                        ? `이번 주 일정 ${upcomingEvents.length}개`
+                                        : '이번 주 일정을 추가해보세요'}
+                                </Text>
+                                <Text style={styles.checklistBannerSub}>가족 모두의 일정을 한 눈에</Text>
+                            </View>
+                            <View style={styles.checklistBannerIcon}>
+                                <Text style={{ fontSize: 40 }}>🗓️</Text>
+                            </View>
+                        </AnimatedTouchableOpacity>
+                    ) : (
+                        // 기숙사 (기본): 룸메이트 체크리스트
+                        <AnimatedTouchableOpacity
+                            entering={FadeInUp.delay(600).duration(600)}
+                            style={styles.checklistBanner}
+                            onPress={() => router.push('/toss/roommate_checklist')}
+                        >
+                            <View style={{ flex: 1 }}>
+                                <View style={styles.checklistBannerTag}>
+                                    <Text style={styles.checklistBannerTagText}>📰 새학기 특집</Text>
+                                </View>
+                                <Text style={styles.checklistBannerTitle}>룸메이트 체크리스트</Text>
+                                <Text style={styles.checklistBannerSub}>22가지 항목으로 나와 맞는{'\n'}룸메이트를 찾아보세요</Text>
+                            </View>
+                            <View style={styles.checklistBannerIcon}>
+                                <Text style={{ fontSize: 40 }}>📋</Text>
+                            </View>
+                        </AnimatedTouchableOpacity>
+                    )}
+
+                    {/* 4. Life Info Banner */}
+                    <AnimatedTouchableOpacity
+                        entering={FadeInUp.delay(700).duration(600)}
+                        style={styles.banner}
+                        onPress={() => router.push('/life_info')}
+                    >
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.bannerSubtitle}>룸메이트 맞춤 꿀팁 ✨</Text>
+                            <Text style={styles.bannerTitle}>공유 생활 꿀팁 보러가기</Text>
                         </View>
-                    </TouchableOpacity>
+                        <View style={styles.bannerEmoji}>
+                            <Text style={{ fontSize: 32 }}>💡</Text>
+                        </View>
+                    </AnimatedTouchableOpacity>
+                        </>
+                    )}
 
                 </View>
-            </ScrollView >
+            </ScrollView>
 
-            <TutorialOverlay
-                visible={!hasSeenTutorial}
-                onComplete={completeTutorial}
-                steps={[
-                    {
-                        target: { x: 0, y: 0, width: width, height: 260, borderRadius: 0 },
-                        title: (translations[language] as any).tutorial.step1_title,
-                        description: (translations[language] as any).tutorial.step1_desc,
-                        position: "bottom"
-                    },
-                    {
-                        target: { x: 20, y: 280, width: width - 40, height: 220, borderRadius: 32 },
-                        title: (translations[language] as any).tutorial.step2_title,
-                        description: (translations[language] as any).tutorial.step2_desc,
-                        position: "bottom"
-                    },
-                    {
-                        target: { x: width - 88, y: height - 194, width: 72, height: 72, borderRadius: 36 },
-                        title: (translations[language] as any).tutorial.step3_title,
-                        description: (translations[language] as any).tutorial.step3_desc,
-                        position: "top"
-                    },
-                    {
-                        target: { x: 0, y: height - (Platform.OS === 'ios' ? 95 : 70), width: width, height: 90, borderRadius: 0 },
-                        title: (translations[language] as any).tutorial.step4_title,
-                        description: (translations[language] as any).tutorial.step4_desc,
-                        position: "top"
-                    }
-                ]}
-            />
-
-            <FloatingActionMenu themeBg={THEMES[nestTheme]?.color || 'bg-orange-500'} />
+            {/* 배너 광고 (화면 하단) */}
+            <AdBanner position="bottom" />
 
             <ActivityModal
                 visible={activityModalVisible}
                 onClose={() => setActivityModalVisible(false)}
             />
 
-            {/* Master Tutorial Modal */}
-            <Modal
-                visible={showMasterModal}
-                transparent
-                animationType="fade"
-            >
-                <View className="flex-1 bg-black/60 items-center justify-center px-6">
-                    <TouchableWithoutFeedback onPress={() => {
-                        completeMasterTutorial();
-                        setShowMasterModal(false);
-                    }}>
-                        <View className="absolute inset-0" />
-                    </TouchableWithoutFeedback>
+            <FloatingActionMenu themeBg={TDS_COLORS.blue} />
 
-                    <Animated.View
-                        entering={FadeInUp.springify().damping(12)}
-                        className="bg-white rounded-[40px] w-full p-8 items-center shadow-2xl relative"
-                    >
-                        {/* Decorative background circle */}
-                        <View className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/10 rounded-full" />
-
-                        <View className="w-24 h-24 bg-yellow-400 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-yellow-100 transform -rotate-6">
-                            <Text className="text-5xl">👑</Text>
-                        </View>
-
-                        <Text className="text-3xl font-black text-gray-900 mb-3 text-center leading-tight">
-                            {tm.tutorial_title}
-                        </Text>
-
-                        <Text className="text-gray-500 text-center leading-7 mb-8 font-medium px-2">
-                            {tm.tutorial_desc}
-                        </Text>
-
-                        <View className="bg-orange-50 p-5 rounded-3xl mb-10 w-full border border-orange-100 flex-row items-center gap-4">
-                            <View className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm">
-                                <Text className="text-lg">💡</Text>
-                            </View>
-                            <Text className="flex-1 text-orange-700 text-xs font-bold leading-5">
-                                {tm.grant_notice}
-                            </Text>
-                        </View>
-
-                        <TouchableOpacity
-                            onPress={() => {
-                                completeMasterTutorial();
-                                setShowMasterModal(false);
-                            }}
-                            className="bg-gray-900 w-full py-6 rounded-[30px] items-center shadow-xl shadow-gray-200"
-                        >
-                            <Text className="text-white font-black text-lg">확인했습니다</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                </View>
-            </Modal>
-        </View >
+            {/* Tutorial Logic */}
+            <TutorialOverlay
+                visible={!hasSeenMasterTutorial && isLoggedIn}
+                onComplete={completeMasterTutorial}
+                steps={[
+                    {
+                        target: { x: 0, y: 0, width: width, height: 300, borderRadius: 0 },
+                        title: t.tutorial?.step1_title || "환영합니다!",
+                        description: t.tutorial?.step1_desc || "새로운 홈 화면을 확인해보세요.",
+                        position: "bottom"
+                    },
+                    {
+                        target: { x: 20, y: 350, width: width - 40, height: 200, borderRadius: 28 },
+                        title: "할 일 관리",
+                        description: "오늘 해야 할 일을 한눈에 확인하세요.",
+                        position: "top"
+                    }
+                ]}
+            />
+        </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: TDS_COLORS.grey100,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 40,
+    },
+    header: {
+        backgroundColor: TDS_COLORS.white,
+        paddingTop: 20,
+        paddingBottom: 24,
+        paddingHorizontal: 24,
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
+        ...TDS_ELEVATION.card,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    nestInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    nestIconBox: {
+        width: 32,
+        height: 32,
+        backgroundColor: TDS_COLORS.grey50,
+        borderRadius: 10,
+        marginRight: 10,
+        padding: 4,
+    },
+    nestIcon: {
+        width: '100%',
+        height: '100%',
+    },
+    nestName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: TDS_COLORS.grey900,
+        marginRight: 4,
+    },
+    notifButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: TDS_COLORS.grey50,
+    },
+    notifBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: TDS_COLORS.red,
+        borderWidth: 1.5,
+        borderColor: TDS_COLORS.white,
+    },
+    memberPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: TDS_COLORS.grey100,
+        alignSelf: 'flex-start',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+    },
+    avatarStack: {
+        flexDirection: 'row',
+        marginRight: 8,
+    },
+    memberText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: TDS_COLORS.grey700,
+    },
+    cardContainer: {
+        padding: 16,
+        gap: 16,
+    },
+    briefingCard: {
+        backgroundColor: TDS_COLORS.blue,
+        borderRadius: 28,
+        padding: 24,
+        ...TDS_SHADOW.premium,
+        ...Platform.select({ web: { boxShadow: '0 8px 20px rgba(49, 130, 246, 0.25)' } }),
+    },
+    cardLabel: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    cardMainTitle: {
+        color: TDS_COLORS.white,
+        fontSize: 22,
+        fontWeight: '900',
+        lineHeight: 30,
+        letterSpacing: -0.5,
+        marginBottom: 20,
+    },
+    cardHeader: {
+        // Container for card label and main title
+    },
+    briefingContent: {
+        gap: 12,
+    },
+    briefingItem: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        padding: 16,
+        borderRadius: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    briefingIconBox: {
+        width: 40,
+        height: 40,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    briefingItemLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 11,
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    briefingItemTitle: {
+        color: TDS_COLORS.white,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    whiteCard: {
+        backgroundColor: TDS_COLORS.white,
+        borderRadius: 28,
+        padding: 24,
+        ...TDS_ELEVATION.card,
+        ...Platform.select({ web: { boxShadow: '0 2px 10px rgba(0,0,0,0.04)' } }),
+    },
+    whiteCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    whiteCardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: TDS_COLORS.grey900,
+    },
+    moreText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: TDS_COLORS.grey500,
+    },
+    todoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: TDS_COLORS.grey100,
+    },
+    todoCheck: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: TDS_COLORS.grey200,
+        marginRight: 12,
+    },
+    todoText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: TDS_COLORS.grey700,
+    },
+    emptyText: {
+        color: TDS_COLORS.grey500,
+        textAlign: 'center',
+        paddingVertical: 20,
+    },
+    banner: {
+        backgroundColor: TDS_COLORS.white,
+        borderRadius: 28,
+        padding: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: TDS_COLORS.white,
+        ...TDS_SHADOW.sm,
+    },
+    bannerSubtitle: {
+        color: TDS_COLORS.blue,
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    bannerTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: TDS_COLORS.grey900,
+    },
+    bannerEmoji: {
+        width: 60,
+        height: 60,
+        backgroundColor: TDS_COLORS.grey50,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    // Roommate Checklist Banner
+    checklistBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1A3A6B',
+        borderRadius: TDS_RADIUS.xl,
+        padding: 20,
+        marginBottom: 12,
+        ...TDS_ELEVATION.card,
+    },
+    checklistBannerTag: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: TDS_RADIUS.sm,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+    },
+    checklistBannerTagText: {
+        ...TDS_TYPOGRAPHY.tiny,
+        color: 'rgba(255,255,255,0.9)',
+    },
+    checklistBannerTitle: {
+        ...TDS_TYPOGRAPHY.h2,
+        color: TDS_COLORS.white,
+        marginBottom: 4,
+    },
+    checklistBannerSub: {
+        ...TDS_TYPOGRAPHY.caption2,
+        color: 'rgba(255,255,255,0.75)',
+        lineHeight: 18,
+    },
+    checklistBannerIcon: {
+        width: 64,
+        height: 64,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: TDS_RADIUS.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TouchableWithoutFeedback } from 'react-native';
 import { AVATARS } from '../constants/data';
 import { Ionicons } from '@expo/vector-icons';
 import { cn } from '../lib/utils';
+import { Image } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 interface AvatarPickerProps {
@@ -44,9 +45,12 @@ export default function AvatarPicker({ visible, onClose, onSelect, selectedId, a
                                             className="w-[47%] bg-gray-50 rounded-2xl p-4 items-center border border-gray-100 relative"
                                         >
                                             <Image
-                                                source={avatar.image}
-                                                style={{ width: 80, height: 80 }}
-                                                className="mb-3 bg-white rounded-full"
+                                                source={
+                                                    typeof avatar.image === 'number'
+                                                        ? avatar.image
+                                                        : { uri: avatar.image.uri }
+                                                }
+                                                style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'white', marginBottom: 12 }}
                                                 resizeMode="contain"
                                             />
                                             <Text className="text-2xl absolute top-2 right-2">{avatar.emoji}</Text>

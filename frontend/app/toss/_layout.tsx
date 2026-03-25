@@ -4,7 +4,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useUserStore } from "../../store/userStore";
 import TossNavBar from "../../components/TossNavBar";
-import { TDSProvider } from "@toss/tds-react-native";
 
 export default function Layout() {
     const { setAppMode } = useUserStore();
@@ -18,21 +17,15 @@ export default function Layout() {
     if (!hydrated) return null;
 
     return (
-        <TDSProvider>
+        <>
             <StatusBar style="dark" />
             <Stack
                 screenOptions={{
-                    headerShown: true,
-                    header: (props) => (
-                        <TossNavBar
-                            title={props.options.title}
-                            canGoBack={props.navigation.canGoBack()}
-                        />
-                    ),
-                    contentStyle: { backgroundColor: '#FFFFFF' },
+                    headerShown: false,
+                    contentStyle: { backgroundColor: '#F2F4F6' }, // Setup Toss grey background globally
                     animation: 'slide_from_right',
                 }}
             />
-        </TDSProvider>
+        </>
     );
 }

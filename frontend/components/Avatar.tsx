@@ -33,21 +33,21 @@ export default function Avatar({
             style={{
                 width: dimensions.width,
                 height: dimensions.height,
-                borderRadius: dimensions.width * 0.42, // Squircle shape (approx ~42% radius)
+                borderRadius: dimensions.width * 0.42,
                 borderColor,
                 borderWidth,
                 overflow: 'hidden',
-                backgroundColor: '#F3F4F6' // Slight gray bg for transparent pngs
+                backgroundColor: '#F3F4F6'
             }}
             className={cn("shadow-sm items-center justify-center bg-gray-100", className)}
         >
             <Image
                 source={source}
+                resizeMode="cover"
                 style={{
                     width: '100%',
                     height: '100%',
                 }}
-                resizeMode="cover"
             />
         </View>
     );

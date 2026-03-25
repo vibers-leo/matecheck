@@ -5,10 +5,12 @@ import { useUserStore } from '../../../store/userStore';
 import React, { useEffect } from 'react';
 
 export default function TabLayout() {
-    const { isLoggedIn, language, appMode } = useUserStore();
+    const { isLoggedIn, language, appMode, nestType } = useUserStore();
     const router = useRouter();
 
     const isTossMode = appMode === 'roommatecheck';
+    // 커플·파트너, 가족은 기념일 탭을 탭바에 표시
+    const showAnniversaryTab = nestType === 'couple' || nestType === 'family';
 
     useEffect(() => {
         if (!isLoggedIn) {
@@ -22,7 +24,7 @@ export default function TabLayout() {
 
     const titles = {
         ko: isTossMode
-            ? { home: "홈", plan: "가계부", rules: "규칙", activity: "알림", settings: "더보기", budget: "정산/송금", anniversary: "디데이" }
+            ? { home: "홈", plan: "일정", rules: "규칙", activity: "알림", settings: "더보기", budget: "공금관리", anniversary: "디데이" }
             : { home: "우리 집", plan: "일정", rules: "약속", activity: "활동", settings: "설정", budget: "정산", anniversary: "기념일" },
         en: { home: "Home", plan: "Plan", rules: "Rules", activity: "Activity", settings: "Settings", budget: "Budget", anniversary: "Anniversary" }
     }[language] || { home: "Home", plan: "Plan", rules: "Rules", activity: "Activity", settings: "Settings", budget: "Budget", anniversary: "Anniversary" };
@@ -108,7 +110,10 @@ export default function TabLayout() {
                 name="anniversary"
                 options={{
                     title: titles.anniversary,
-                    href: null,
+                    href: showAnniversaryTab ? undefined : null,
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons name={focused ? "heart" : "heart-outline"} size={24} color={color} />
+                    ),
                 }}
             />
         </Tabs>

@@ -64,7 +64,7 @@ export default function SignupScreen() {
 
             if (response.ok) {
                 setStoreEmail(email);
-                router.push('/(onboarding)/nest_choice');
+                router.push('/toss/(onboarding)/nest_choice');
             } else {
                 if (data.errors) {
                     setErrorMessage(data.errors.join('\n'));
@@ -180,7 +180,7 @@ export default function SignupScreen() {
                     {/* Login Link */}
                     <View className="flex-row justify-center items-center gap-2">
                         <Text className="text-gray-400 text-base">이미 계정이 있으신가요?</Text>
-                        <Link href="/(auth)/login" asChild>
+                        <Link href="/toss/(auth)/login" asChild>
                             <TouchableOpacity>
                                 <Text className="text-orange-600 font-bold text-base">로그인</Text>
                             </TouchableOpacity>

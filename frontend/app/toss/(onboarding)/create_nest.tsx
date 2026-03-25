@@ -7,12 +7,13 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { API_URL } from '../../../constants/Config';
 import { translations } from '../../../constants/I18n';
 import { AVATARS, NEST_AVATARS } from '../../../constants/data';
+import { NEST_TYPE_DEFAULT_RULES } from '../../../constants/NestTypeDefaults';
 import { Ionicons } from '@expo/vector-icons';
 import AvatarPicker from '../../../components/AvatarPicker';
 
 export default function CreateNestScreen() {
     const router = useRouter();
-    const { setNest, nickname, avatarId, nestAvatarId, userEmail, language, setProfile } = useUserStore();
+    const { setNest, nickname, avatarId, nestAvatarId, userEmail, language, setProfile, nestType } = useUserStore();
     const t = (translations[language as keyof typeof translations] as any).onboarding;
 
     const [name, setName] = useState('');
@@ -39,6 +40,19 @@ export default function CreateNestScreen() {
 
             if (response.ok) {
                 setNest(data.name, data.theme_id, data.invite_code, data.id.toString(), '', data.avatar_id, true);
+
+                // nestType에 맞는 기본 규칙 3개 자동 등록
+                const defaultRules = NEST_TYPE_DEFAULT_RULES[nestType ?? 'dormitory'];
+                await Promise.allSettled(
+                    defaultRules.map(rule =>
+                        fetch(`${API_URL}/nests/${data.id}/house_rules`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content: rule }),
+                        })
+                    )
+                );
+
                 router.replace('/(tabs)/home');
             } else {
                 Alert.alert("Error", data.errors?.join(', ') || "Failed to create.");
@@ -64,11 +78,11 @@ export default function CreateNestScreen() {
                     >
                         <Image
                             source={(NEST_AVATARS.find(a => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
-                            className="w-24 h-24 rounded-full border-4 border-white shadow-sm bg-gray-50"
+                            className="w-16 h-16 rounded-full border-2 border-white shadow-sm bg-gray-50"
                             resizeMode="contain"
                         />
-                        <View className="absolute bottom-0 right-0 bg-gray-900 p-2 rounded-full border-2 border-white">
-                            <Ionicons name="camera" size={14} color="white" />
+                        <View className="absolute bottom-0 right-0 bg-gray-900 p-1.5 rounded-full border-2 border-white">
+                            <Ionicons name="camera" size={12} color="white" />
                         </View>
                     </TouchableOpacity>
                     <Text className="text-gray-400 text-xs mt-3">프로필 사진 변경</Text>

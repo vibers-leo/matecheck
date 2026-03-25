@@ -1,0 +1,51 @@
+services:
+  matecheck-db:
+    image: postgres:16-alpine
+    container_name: matecheck-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: matecheck_production
+      POSTGRES_USER: ${POSTGRES_USER:-matecheck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-matecheck} -d matecheck_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  matecheck-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: matecheck-api
+    restart: unless-stopped
+    ports:
+      - "4010:8000"
+    environment:
+      RAILS_ENV: production
+      PORT: 8000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-matecheck}:${POSTGRES_PASSWORD}@matecheck-db:5432/matecheck_production
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      RAILS_LOG_LEVEL: info
+      RAILS_MAX_THREADS: 5
+      WEB_CONCURRENCY: 2
+    depends_on:
+      matecheck-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - npm_default
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge
+  npm_default:
+    external: true

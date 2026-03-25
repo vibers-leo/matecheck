@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
-import { useUserStore, Todo } from '../../../store/userStore';
+import { useUserStore, Todo, BudgetTransaction } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
 import { THEMES, AVATARS } from '../../../constants/data';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
@@ -11,9 +11,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { translations, Language } from '../../../constants/I18n';
 import Avatar from '../../../components/Avatar';
 import TutorialOverlay from '../../../components/TutorialOverlay';
+import { SkeletonCalendar, SkeletonTodoItem } from '../../../components/Skeleton';
 import { Dimensions } from 'react-native';
+import { TDS_COLORS, TDS_TYPOGRAPHY, TDS_ELEVATION } from '../../../constants/DesignTokens';
+import { suggestFairTaskAssignment, generateAssignmentMessage, analyzeTeamBalance } from '../../../utils/taskAI';
 
 const { width, height } = Dimensions.get('window');
+
+// Create Animated TouchableOpacity
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 // --- CALENDAR LOCALE SETUP ---
 LocaleConfig.locales['kr'] = {
@@ -30,7 +36,7 @@ export default function PlanScreen() {
     const params = useLocalSearchParams<{ action?: string }>();
     const {
         nestTheme, events, addEvent, voteEvent, deleteEvent, avatarId,
-        todos, addTodo, toggleTodo, deleteTodo, members, language
+        todos, addTodo, toggleTodo, deleteTodo, members, language, isLoading
     } = useUserStore();
 
     const t = translations[language as Language];
@@ -58,6 +64,7 @@ export default function PlanScreen() {
     const [eventBudgetAmount, setEventBudgetAmount] = useState('');
     const [eventBudgetCategory, setEventBudgetCategory] = useState<BudgetTransaction['category']>('etc');
     const [isBudgetEnabled, setIsBudgetEnabled] = useState(false);
+    const [eventRepeat, setEventRepeat] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
 
     // --- TODO STATE ---
     const [todoModalVisible, setTodoModalVisible] = useState(false);
@@ -95,12 +102,15 @@ export default function PlanScreen() {
     };
 
     // --- CALENDAR LOGIC ---
-    const handleDayPress = (day: DateData) => setSelectedDate(day.dateString);
-    const isDateInRange = (target: string, start: string, end?: string) => {
+    const handleDayPress = useCallback((day: DateData) => setSelectedDate(day.dateString), []);
+    const isDateInRange = useCallback((target: string, start: string, end?: string) => {
         if (!end) return target === start;
         return target >= start && target <= end;
-    };
-    const selectedEvents = events.filter((e: any) => isDateInRange(selectedDate, e.date, e.endDate));
+    }, []);
+    const selectedEvents = useMemo(() =>
+        events.filter((e: any) => isDateInRange(selectedDate, e.date, e.endDate)),
+        [events, selectedDate, isDateInRange]
+    );
 
     const renderDay = ({ date, state }: any) => {
         if (!date) return <View />;
@@ -138,8 +148,8 @@ export default function PlanScreen() {
             ? { amount: parseInt(eventBudgetAmount.replace(/[^0-9]/g, '')), category: eventBudgetCategory }
             : undefined;
 
-        addEvent(eventText, selectedDate, selectedImage || undefined, endDate || undefined, timeToSend, budgetInfo);
-        setEventText(''); setSelectedImage(null); setEndDate(null); setEventTime('');
+        addEvent(eventText, selectedDate, selectedImage || undefined, endDate || undefined, timeToSend, budgetInfo, eventRepeat);
+        setEventText(''); setSelectedImage(null); setEndDate(null); setEventTime(''); setEventRepeat('none');
         setIsTimeEnabled(false); setEventBudgetAmount(''); setEventBudgetCategory('etc'); setIsBudgetEnabled(false);
         setCalModalVisible(false);
     };
@@ -152,8 +162,25 @@ export default function PlanScreen() {
     };
 
     // --- TODO LOGIC ---
-    const dailyMissions = todos.filter((t: any) => t.repeat !== 'weekly');
-    const weeklyMissions = todos.filter((t: any) => t.repeat === 'weekly');
+    const dailyMissions = useMemo(() =>
+        todos.filter((t: any) => t.repeat !== 'weekly'),
+        [todos]
+    );
+    const weeklyMissions = useMemo(() =>
+        todos.filter((t: any) => t.repeat === 'weekly'),
+        [todos]
+    );
+
+    // AI 공평한 일 분배 추천
+    const taskAssignmentScores = useMemo(() =>
+        suggestFairTaskAssignment(members, todos, 30),
+        [members, todos]
+    );
+
+    const teamBalance = useMemo(() =>
+        analyzeTeamBalance(members, todos),
+        [members, todos]
+    );
 
     const getFutureDate = (months: number) => {
         const d = new Date();
@@ -161,12 +188,12 @@ export default function PlanScreen() {
         return d.toISOString().split('T')[0];
     };
 
-    const handleAddTodo = () => {
+    const handleAddTodo = useCallback(() => {
         if (newTodoTitle.trim()) {
             addTodo(newTodoTitle, selectedAssigneeIds, repeatOption, selectedImage || undefined);
             setNewTodoTitle(''); setRepeatOption('none'); setIsRepeatEnabled(false); setSelectedImage(null); setRepeatEndDate(null); setTodoModalVisible(false);
         }
-    };
+    }, [newTodoTitle, selectedAssigneeIds, repeatOption, selectedImage, addTodo]);
 
     const toggleAssignee = (id: string) => {
         if (selectedAssigneeIds.includes(id)) {
@@ -176,7 +203,7 @@ export default function PlanScreen() {
         }
     };
 
-    const TodoItem = ({ item, index }: { item: Todo, index: number }) => (
+    const TodoItem = React.memo(({ item, index }: { item: Todo, index: number }) => (
         <Animated.View entering={FadeInUp.delay(index * 50)} layout={Layout.springify()} className={cn("flex-row items-center bg-white p-4 rounded-2xl mb-3 shadow-sm border", item.isCompleted ? "border-gray-100 opacity-60" : "border-gray-100")}>
             <TouchableOpacity onPress={() => toggleTodo(item.id, '0')} className={cn("w-6 h-6 rounded-md border-2 mr-3 items-center justify-center", item.isCompleted ? `${themeBg} ${themeBorder}` : "border-gray-300 bg-white")}>
                 {item.isCompleted && <Ionicons name="checkmark" size={16} color="white" />}
@@ -206,19 +233,24 @@ export default function PlanScreen() {
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
             </TouchableOpacity>
         </Animated.View>
-    );
+    ), (prevProps, nextProps) => {
+        return prevProps.item.id === nextProps.item.id &&
+               prevProps.item.isCompleted === nextProps.item.isCompleted &&
+               prevProps.item.title === nextProps.item.title;
+    });
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-[#F2F4F6]">
             {/* Header */}
             {/* Header (Modern Simple Style) */}
-            <View className="pt-12 pb-6 px-6 bg-white shadow-sm rounded-b-[40px] z-20 mb-6 flex-row justify-between items-center">
-                <View className="flex-row items-center gap-2">
-                    <Text className="text-2xl font-black text-gray-900">
+            {/* Header (Toss Style) */}
+            <View className="pt-4 pb-4 px-6 z-10" style={{ backgroundColor: TDS_COLORS.grey100 }}>
+                <View className="flex-row items-center justify-between">
+                    <Text className="font-bold" style={{ fontSize: TDS_TYPOGRAPHY.display1.fontSize, color: TDS_COLORS.grey900, letterSpacing: TDS_TYPOGRAPHY.display1.letterSpacing }}>
                         {tCalendar.title}
                     </Text>
-                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-1">
-                        <Ionicons name="help-circle-outline" size={24} color="#9CA3AF" />
+                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="bg-white p-2 rounded-full shadow-sm">
+                        <Ionicons name="help" size={20} color={TDS_COLORS.grey500} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -226,15 +258,21 @@ export default function PlanScreen() {
             {/* Single Page ScrollView */}
             <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
-                {/* Calendar Section */}
-                <View className="bg-white pb-6 rounded-b-3xl shadow-sm mb-6">
-                    <Calendar
-                        current={today}
-                        dayComponent={renderDay}
-                        key={JSON.stringify(events)}
-                        theme={{ arrowColor: activeColorHex, monthTextColor: '#1F2937', textMonthFontWeight: '800' }}
-                    />
-                </View>
+                {/* Calendar Section - Clean Card */}
+                {isLoading.events ? (
+                    <View className="mx-4 mt-2 mb-6">
+                        <SkeletonCalendar />
+                    </View>
+                ) : (
+                    <View className="mx-4 mt-2 bg-white rounded-[24px] p-4 mb-6" style={TDS_ELEVATION.card}>
+                        <Calendar
+                            current={today}
+                            dayComponent={renderDay}
+                            key={JSON.stringify(events)}
+                            theme={{ arrowColor: activeColorHex, monthTextColor: '#1F2937', textMonthFontWeight: '800' }}
+                        />
+                    </View>
+                )}
 
                 {/* Selected Date Events */}
                 <View className="px-6 mb-8">
@@ -306,7 +344,13 @@ export default function PlanScreen() {
                         <Text className="text-lg font-bold text-gray-800">✅ {language === 'ko' ? "할 일" : "Todo"}</Text>
                     </View>
 
-                    {todos.length === 0 ? (
+                    {isLoading.todos ? (
+                        <>
+                            <SkeletonTodoItem />
+                            <SkeletonTodoItem />
+                            <SkeletonTodoItem />
+                        </>
+                    ) : todos.length === 0 ? (
                         <TouchableOpacity
                             onPress={() => setTodoModalVisible(true)}
                             className="bg-gray-50 rounded-2xl p-8 items-center justify-center border-2 border-dashed border-gray-200 active:bg-gray-100"
@@ -382,148 +426,170 @@ export default function PlanScreen() {
             </Modal>
 
             {/* Calendar Modal */}
-            {/* Calendar Modal */}
             <Modal animationType="fade" transparent={true} visible={calModalVisible} onRequestClose={() => setCalModalVisible(false)}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     className="flex-1 bg-black/60 justify-center px-6"
                 >
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
-                            {/* Close Button */}
-                            <TouchableOpacity
-                                onPress={() => { setCalModalVisible(false); setCalStep(1); }}
-                                className="absolute top-6 right-6 z-10 w-10 h-10 items-center justify-center bg-gray-100 rounded-full"
-                            >
-                                <Ionicons name="close" size={24} color="#94A3B8" />
-                            </TouchableOpacity>
+                    <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            onPress={() => { setCalModalVisible(false); setCalStep(1); }}
+                            className="absolute top-6 right-6 z-10 w-10 h-10 items-center justify-center bg-gray-100 rounded-full"
+                        >
+                            <Ionicons name="close" size={24} color="#94A3B8" />
+                        </TouchableOpacity>
 
-                            {/* Header / Info */}
-                            <View className="mb-8 items-center">
-                                <View className={cn("w-16 h-16 rounded-3xl items-center justify-center mb-4", themeBg)}>
-                                    <Ionicons name="calendar-sharp" size={32} color="white" />
-                                </View>
-                                <Text className="text-2xl font-black text-gray-900">{tCalendar.add_event}</Text>
-                                <Text className="text-gray-400 font-bold mt-1">Step {calStep} of 3</Text>
+                        {/* Header / Info */}
+                        <View className="mb-8 items-center">
+                            <View className={cn("w-16 h-16 rounded-3xl items-center justify-center mb-4", themeBg)}>
+                                <Ionicons name="calendar-sharp" size={32} color="white" />
                             </View>
+                            <Text className="text-2xl font-black text-gray-900">{tCalendar.add_event}</Text>
+                            <Text className="text-gray-400 font-bold mt-1">Step {calStep} of 3</Text>
+                        </View>
 
-                            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
-                                {calStep === 1 && (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">제목을 입력해주세요</Text>
+                        <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
+                            {calStep === 1 && (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">제목을 입력해주세요</Text>
+                                    <TextInput
+                                        value={eventText}
+                                        onChangeText={setEventText}
+                                        placeholder={tCalendar.event_title_placeholder}
+                                        className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold mb-4"
+                                        autoFocus
+                                    />
+
+                                    <View className="flex-row items-center justify-between px-1 mb-2">
+                                        <Text className="text-sm font-black text-gray-900">시간 설정</Text>
+                                        <TouchableOpacity onPress={() => setIsTimeEnabled(!isTimeEnabled)}>
+                                            <Ionicons name={isTimeEnabled ? "checkbox" : "square-outline"} size={24} color={isTimeEnabled ? "#6366F1" : "#D1D5DB"} />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {isTimeEnabled && (
                                         <TextInput
-                                            value={eventText}
-                                            onChangeText={setEventText}
-                                            placeholder={tCalendar.event_title_placeholder}
-                                            className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 text-lg font-bold mb-4"
-                                            autoFocus
+                                            value={eventTime}
+                                            onChangeText={setEventTime}
+                                            placeholder={language === 'ko' ? "예: 오후 2시" : "e.g. 2:00 PM"}
+                                            className="bg-gray-50 border-2 border-indigo-100 rounded-2xl p-5 text-gray-900 text-lg font-bold"
                                         />
+                                    )}
+                                </View>
+                            )}
 
-                                        <View className="flex-row items-center justify-between px-1 mb-2">
-                                            <Text className="text-sm font-black text-gray-900">시간 설정</Text>
-                                            <TouchableOpacity onPress={() => setIsTimeEnabled(!isTimeEnabled)}>
-                                                <Ionicons name={isTimeEnabled ? "checkbox" : "square-outline"} size={24} color={isTimeEnabled ? "#6366F1" : "#D1D5DB"} />
+                            {calStep === 2 && (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-4 ml-1">일정 반복</Text>
+                                    <View className="flex-row flex-wrap gap-2 mb-6">
+                                        {(['none', 'weekly', 'monthly'] as const).map((opt) => (
+                                            <TouchableOpacity
+                                                key={opt}
+                                                onPress={() => setEventRepeat(opt)}
+                                                className={cn(
+                                                    "flex-1 min-w-[30%] py-4 rounded-2xl border-2 items-center justify-center",
+                                                    eventRepeat === opt ? themeBg + " " + themeBorder : "bg-gray-50 border-gray-100"
+                                                )}
+                                            >
+                                                <Text className={cn("font-black text-sm", eventRepeat === opt ? "text-white" : "text-gray-400")}>
+                                                    {opt === 'none' ? "반복 없음" : opt === 'weekly' ? "매주" : "매월 (월세 등)"}
+                                                </Text>
                                             </TouchableOpacity>
-                                        </View>
-
-                                        {isTimeEnabled && (
-                                            <TextInput
-                                                value={eventTime}
-                                                onChangeText={setEventTime}
-                                                placeholder={language === 'ko' ? "예: 오후 2시" : "e.g. 2:00 PM"}
-                                                className="bg-gray-50 border-2 border-indigo-100 rounded-2xl p-5 text-gray-900 text-lg font-bold"
-                                            />
-                                        )}
+                                        ))}
                                     </View>
-                                )}
 
-                                {calStep === 2 && (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-4 ml-1">기간을 확인해주세요</Text>
-                                        <View className="bg-gray-50 rounded-3xl p-6 border-2 border-gray-100 mb-4">
-                                            <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                                                <Text className="text-gray-400 font-bold">시작일</Text>
-                                                <Text className="text-gray-900 font-black text-lg">{selectedDate}</Text>
-                                            </View>
-                                            <View className="flex-row items-center justify-between">
-                                                <Text className="text-gray-400 font-bold">종료일</Text>
-                                                <TouchableOpacity
-                                                    onPress={() => setEndDate(endDate ? null : addDays(selectedDate, 1))}
-                                                    className={cn("px-4 py-2 rounded-xl", endDate ? themeBg : "bg-gray-200")}
-                                                >
-                                                    <Text className="text-white font-black">{endDate || "하루 일정"}</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                        {endDate && (
-                                            <Text className="text-indigo-600 text-xs text-center font-bold">장기 일정으로 등록됩니다 ✨</Text>
-                                        )}
-                                    </View>
-                                )}
-
-                                {calStep === 3 && (
-                                    <View>
-                                        <View className="flex-row items-center justify-between mb-4">
-                                            <Text className="text-sm font-black text-gray-900 ml-1">공금 지출 연동</Text>
-                                            <TouchableOpacity onPress={() => setIsBudgetEnabled(!isBudgetEnabled)}>
-                                                <Ionicons name={isBudgetEnabled ? "checkbox" : "square-outline"} size={24} color={isBudgetEnabled ? "#F59E0B" : "#D1D5DB"} />
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        {isBudgetEnabled ? (
-                                            <View className="bg-orange-50 rounded-3xl p-6 border-2 border-orange-100">
-                                                <TextInput
-                                                    value={eventBudgetAmount}
-                                                    onChangeText={setEventBudgetAmount}
-                                                    placeholder="금액 입력"
-                                                    keyboardType="numeric"
-                                                    className="bg-white border-2 border-orange-200 rounded-2xl p-4 text-gray-900 text-lg font-bold mb-4"
-                                                    autoFocus
-                                                />
-                                                <View className="flex-row justify-between items-center bg-white p-4 rounded-2xl border-2 border-orange-200">
-                                                    <Text className="text-orange-600 font-bold">카테고리</Text>
-                                                    <TouchableOpacity onPress={() => {
-                                                        const categories: BudgetTransaction['category'][] = ['food', 'housing', 'living', 'transport', 'etc'];
-                                                        const idx = categories.indexOf(eventBudgetCategory);
-                                                        setEventBudgetCategory(categories[(idx + 1) % categories.length]);
-                                                    }}>
-                                                        <Text className="text-gray-900 font-black uppercase">{eventBudgetCategory}</Text>
+                                    {!eventRepeat || eventRepeat === 'none' ? (
+                                        <View>
+                                            <Text className="text-sm font-black text-gray-900 mb-4 ml-1">기간 (선택)</Text>
+                                            <View className="bg-gray-50 rounded-3xl p-6 border-2 border-gray-100">
+                                                <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                                                    <Text className="text-gray-400 font-bold">시작일</Text>
+                                                    <Text className="text-gray-900 font-black text-lg">{selectedDate}</Text>
+                                                </View>
+                                                <View className="flex-row items-center justify-between">
+                                                    <Text className="text-gray-400 font-bold">종료일</Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => setEndDate(endDate ? null : addDays(selectedDate, 1))}
+                                                        className={cn("px-4 py-2 rounded-xl", endDate ? themeBg : "bg-gray-200")}
+                                                    >
+                                                        <Text className="text-white font-black">{endDate || "단기 일정"}</Text>
                                                     </TouchableOpacity>
                                                 </View>
                                             </View>
-                                        ) : (
-                                            <View className="bg-gray-50 rounded-3xl p-8 items-center border-2 border-dashed border-gray-200">
-                                                <Ionicons name="wallet-outline" size={32} color="#94A3B8" />
-                                                <Text className="text-gray-400 font-bold mt-3">지출 정보가 없습니다</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-                            </ScrollView>
+                                        </View>
+                                    ) : (
+                                        <View className="bg-indigo-50 p-4 rounded-xl items-center">
+                                            <Text className="text-indigo-600 font-bold text-center">
+                                                {eventRepeat === 'monthly' ? "매월 자동으로 일정이 생성되고,\n공금 지출을 설정하면 '고정 지출'에도 등록됩니다!" : "매주 반복되는 일정입니다."}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
 
-                            {/* Buttons */}
-                            <View className="flex-row gap-3">
-                                {calStep > 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => setCalStep(calStep - 1)}
-                                        className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200"
-                                    >
-                                        <Text className="text-gray-600 font-black">이전</Text>
-                                    </TouchableOpacity>
-                                )}
+                            {calStep === 3 && (
+                                <View>
+                                    <View className="flex-row items-center justify-between mb-4">
+                                        <Text className="text-sm font-black text-gray-900 ml-1">공금 지출 연동</Text>
+                                        <TouchableOpacity onPress={() => setIsBudgetEnabled(!isBudgetEnabled)}>
+                                            <Ionicons name={isBudgetEnabled ? "checkbox" : "square-outline"} size={24} color={isBudgetEnabled ? "#F59E0B" : "#D1D5DB"} />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {isBudgetEnabled ? (
+                                        <View className="bg-orange-50 rounded-3xl p-6 border-2 border-orange-100">
+                                            <TextInput
+                                                value={eventBudgetAmount}
+                                                onChangeText={setEventBudgetAmount}
+                                                placeholder="금액 입력"
+                                                keyboardType="numeric"
+                                                className="bg-white border-2 border-orange-200 rounded-2xl p-4 text-gray-900 text-lg font-bold mb-4"
+                                                autoFocus
+                                            />
+                                            <View className="flex-row justify-between items-center bg-white p-4 rounded-2xl border-2 border-orange-200">
+                                                <Text className="text-orange-600 font-bold">카테고리</Text>
+                                                <TouchableOpacity onPress={() => {
+                                                    const categories: BudgetTransaction['category'][] = ['food', 'housing', 'living', 'transport', 'etc'];
+                                                    const idx = categories.indexOf(eventBudgetCategory);
+                                                    setEventBudgetCategory(categories[(idx + 1) % categories.length]);
+                                                }}>
+                                                    <Text className="text-gray-900 font-black uppercase">{eventBudgetCategory}</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    ) : (
+                                        <View className="bg-gray-50 rounded-3xl p-8 items-center border-2 border-dashed border-gray-200">
+                                            <Ionicons name="wallet-outline" size={32} color="#94A3B8" />
+                                            <Text className="text-gray-400 font-bold mt-3">지출 정보가 없습니다</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </ScrollView>
+
+                        {/* Buttons */}
+                        <View className="flex-row gap-3">
+                            {calStep > 1 && (
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        if (calStep < 3) setCalStep(calStep + 1);
-                                        else onAddEvent();
-                                    }}
-                                    disabled={calStep === 1 && !eventText.trim()}
-                                    className={cn("flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg", (calStep === 1 && !eventText.trim()) ? "bg-gray-200 shadow-none" : themeBg)}
+                                    onPress={() => setCalStep(calStep - 1)}
+                                    className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200"
                                 >
-                                    <Text className="text-white font-black">{calStep === 3 ? "일정 완성! ✨" : "계속하기"}</Text>
+                                    <Text className="text-gray-600 font-black">이전</Text>
                                 </TouchableOpacity>
-                            </View>
+                            )}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (calStep < 3) setCalStep(calStep + 1);
+                                    else onAddEvent();
+                                }}
+                                disabled={calStep === 1 && !eventText.trim()}
+                                className={cn("flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg", (calStep === 1 && !eventText.trim()) ? "bg-gray-200 shadow-none" : themeBg)}
+                            >
+                                <Text className="text-white font-black">{calStep === 3 ? "일정 완성! ✨" : "계속하기"}</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableWithoutFeedback>
+                    </View>
                 </KeyboardAvoidingView>
             </Modal>
 
@@ -533,122 +599,158 @@ export default function PlanScreen() {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     className="flex-1 bg-black/60 justify-center px-6"
                 >
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
-                            {/* Close Button */}
-                            <TouchableOpacity
-                                onPress={() => { setTodoModalVisible(false); setTodoStep(1); }}
-                                className="absolute top-6 right-6 z-10 w-10 h-10 items-center justify-center bg-gray-100 rounded-full"
-                            >
-                                <Ionicons name="close" size={24} color="#94A3B8" />
-                            </TouchableOpacity>
+                    <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            onPress={() => { setTodoModalVisible(false); setTodoStep(1); }}
+                            className="absolute top-6 right-6 z-10 w-10 h-10 items-center justify-center bg-gray-100 rounded-full"
+                        >
+                            <Ionicons name="close" size={24} color="#94A3B8" />
+                        </TouchableOpacity>
 
-                            {/* Header */}
-                            <View className="mb-8 items-center">
-                                <View className={cn("w-16 h-16 rounded-3xl items-center justify-center mb-4 shadow-lg", themeBg)}>
-                                    <Ionicons name="checkbox" size={32} color="white" />
-                                </View>
-                                <Text className="text-2xl font-black text-gray-900">{tTodo.add_modal}</Text>
-                                <Text className="text-gray-400 font-bold mt-1">Step {todoStep} of 2</Text>
+                        {/* Header */}
+                        <View className="mb-8 items-center">
+                            <View className={cn("w-16 h-16 rounded-3xl items-center justify-center mb-4 shadow-lg", themeBg)}>
+                                <Ionicons name="checkbox" size={32} color="white" />
                             </View>
+                            <Text className="text-2xl font-black text-gray-900">{tTodo.add_modal}</Text>
+                            <Text className="text-gray-400 font-bold mt-1">Step {todoStep} of 2</Text>
+                        </View>
 
-                            <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
-                                {todoStep === 1 ? (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">집안일 제목</Text>
-                                        <TextInput
-                                            value={newTodoTitle}
-                                            onChangeText={setNewTodoTitle}
-                                            placeholder={tTodo.placeholder_input}
-                                            className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-800 text-lg font-bold mb-6"
-                                            autoFocus
-                                        />
+                        <ScrollView showsVerticalScrollIndicator={false} className="max-h-[300px] mb-8">
+                            {todoStep === 1 ? (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">집안일 제목</Text>
+                                    <TextInput
+                                        value={newTodoTitle}
+                                        onChangeText={setNewTodoTitle}
+                                        placeholder={tTodo.placeholder_input}
+                                        className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-800 text-lg font-bold mb-6"
+                                        autoFocus
+                                    />
 
-                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1">담당 메이트 선택</Text>
-                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
-                                            {members.map(m => (
-                                                <TouchableOpacity
-                                                    key={m.id}
-                                                    onPress={() => {
-                                                        if (selectedAssigneeIds.includes(m.id)) {
-                                                            setSelectedAssigneeIds(selectedAssigneeIds.filter(id => id !== m.id));
-                                                        } else {
-                                                            setSelectedAssigneeIds([...selectedAssigneeIds, m.id]);
-                                                        }
-                                                    }}
-                                                    className={cn(
-                                                        "px-4 py-2 rounded-xl border-2 mb-2 mr-2",
-                                                        selectedAssigneeIds.includes(m.id) ? "bg-indigo-600 border-indigo-600" : "bg-gray-50 border-gray-100"
-                                                    )}
-                                                >
-                                                    <Text className={cn("font-bold", selectedAssigneeIds.includes(m.id) ? "text-white" : "text-gray-400")}>{m.nickname}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        <Text className="text-sm font-black text-gray-900 mb-4 ml-1">반복 일정 설정</Text>
-                                        <View className="flex-row flex-wrap gap-2 mb-6">
-                                            {(['none', 'daily', 'weekly', 'monthly'] as const).map((opt) => (
-                                                <TouchableOpacity
-                                                    key={opt}
-                                                    onPress={() => setRepeatOption(opt)}
-                                                    className={cn(
-                                                        "flex-1 min-w-[45%] py-4 rounded-2xl border-2 items-center justify-center",
-                                                        repeatOption === opt ? themeBg + " " + themeBorder : "bg-gray-50 border-gray-100"
-                                                    )}
-                                                >
-                                                    <Text className={cn("font-black", repeatOption === opt ? "text-white" : "text-gray-400")}>
-                                                        {opt === 'none' ? "반복 안함" : opt === 'daily' ? "매일" : opt === 'weekly' ? "매주" : "매월"}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-
-                                        {repeatOption !== 'none' && (
-                                            <View className="bg-indigo-50 p-6 rounded-[32px] border-2 border-indigo-100">
-                                                <Text className="text-indigo-600 font-bold mb-3">반복 기한</Text>
-                                                <View className="flex-row gap-2">
-                                                    {[1, 3, 6].map(month => (
-                                                        <TouchableOpacity
-                                                            key={month}
-                                                            onPress={() => setRepeatEndDate(getFutureDate(month))}
-                                                            className={cn("flex-1 py-3 rounded-xl border-2", repeatEndDate === getFutureDate(month) ? "bg-white border-indigo-500" : "bg-white border-white")}
-                                                        >
-                                                            <Text className={cn("text-center font-bold", repeatEndDate === getFutureDate(month) ? "text-indigo-600" : "text-gray-400")}>{month}개월</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
+                                    {/* AI 추천 배너 */}
+                                    {taskAssignmentScores.length > 0 && (
+                                        <View className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl mb-4 border-2 border-blue-200">
+                                            <View className="flex-row items-center mb-2">
+                                                <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center mr-3">
+                                                    <Text className="text-lg">🤖</Text>
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Text className="text-xs font-bold text-blue-900">AI 공평 추천</Text>
+                                                    <Text className="text-[10px] text-blue-600">{teamBalance.message}</Text>
                                                 </View>
                                             </View>
-                                        )}
-                                    </View>
-                                )}
-                            </ScrollView>
+                                            <View className="flex-row flex-wrap gap-2">
+                                                {taskAssignmentScores.slice(0, 3).map((score, idx) => (
+                                                    <TouchableOpacity
+                                                        key={score.memberId}
+                                                        onPress={() => {
+                                                            if (!selectedAssigneeIds.includes(score.memberId)) {
+                                                                setSelectedAssigneeIds([...selectedAssigneeIds, score.memberId]);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            "px-3 py-2 rounded-xl border-2 flex-row items-center",
+                                                            idx === 0 ? "bg-blue-500 border-blue-600" : "bg-white border-blue-200"
+                                                        )}
+                                                    >
+                                                        <Text className={cn("text-xs font-bold mr-1", idx === 0 ? "text-white" : "text-blue-900")}>
+                                                            {idx === 0 ? "👍 " : ""}{score.memberName}
+                                                        </Text>
+                                                        <Text className={cn("text-[10px]", idx === 0 ? "text-blue-100" : "text-blue-600")}>
+                                                            {score.reason}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
 
-                            {/* Buttons */}
-                            <View className="flex-row gap-3">
-                                {todoStep > 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => setTodoStep(todoStep - 1)}
-                                        className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200"
-                                    >
-                                        <Text className="text-gray-600 font-black">이전</Text>
-                                    </TouchableOpacity>
-                                )}
+                                    <Text className="text-sm font-black text-gray-900 mb-3 ml-1">담당 메이트 선택</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                                        {members.map(m => (
+                                            <TouchableOpacity
+                                                key={m.id}
+                                                onPress={() => {
+                                                    if (selectedAssigneeIds.includes(m.id)) {
+                                                        setSelectedAssigneeIds(selectedAssigneeIds.filter(id => id !== m.id));
+                                                    } else {
+                                                        setSelectedAssigneeIds([...selectedAssigneeIds, m.id]);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl border-2 mb-2 mr-2",
+                                                    selectedAssigneeIds.includes(m.id) ? "bg-indigo-600 border-indigo-600" : "bg-gray-50 border-gray-100"
+                                                )}
+                                            >
+                                                <Text className={cn("font-bold", selectedAssigneeIds.includes(m.id) ? "text-white" : "text-gray-400")}>{m.nickname}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            ) : (
+                                <View>
+                                    <Text className="text-sm font-black text-gray-900 mb-4 ml-1">반복 일정 설정</Text>
+                                    <View className="flex-row flex-wrap gap-2 mb-6">
+                                        {(['none', 'daily', 'weekly', 'monthly'] as const).map((opt) => (
+                                            <TouchableOpacity
+                                                key={opt}
+                                                onPress={() => setRepeatOption(opt)}
+                                                className={cn(
+                                                    "flex-1 min-w-[45%] py-4 rounded-2xl border-2 items-center justify-center",
+                                                    repeatOption === opt ? themeBg + " " + themeBorder : "bg-gray-50 border-gray-100"
+                                                )}
+                                            >
+                                                <Text className={cn("font-black", repeatOption === opt ? "text-white" : "text-gray-400")}>
+                                                    {opt === 'none' ? "반복 안함" : opt === 'daily' ? "매일" : opt === 'weekly' ? "매주" : "매월"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    {repeatOption !== 'none' && (
+                                        <View className="bg-indigo-50 p-6 rounded-[32px] border-2 border-indigo-100">
+                                            <Text className="text-indigo-600 font-bold mb-3">반복 기한</Text>
+                                            <View className="flex-row gap-2">
+                                                {[1, 3, 6].map(month => (
+                                                    <TouchableOpacity
+                                                        key={month}
+                                                        onPress={() => setRepeatEndDate(getFutureDate(month))}
+                                                        className={cn("flex-1 py-3 rounded-xl border-2", repeatEndDate === getFutureDate(month) ? "bg-white border-indigo-500" : "bg-white border-white")}
+                                                    >
+                                                        <Text className={cn("text-center font-bold", repeatEndDate === getFutureDate(month) ? "text-indigo-600" : "text-gray-400")}>{month}개월</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </ScrollView>
+
+                        {/* Buttons */}
+                        <View className="flex-row gap-3">
+                            {todoStep > 1 && (
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        if (todoStep < 2) setTodoStep(2);
-                                        else handleAddTodo();
-                                    }}
-                                    disabled={todoStep === 1 && (!newTodoTitle.trim() || selectedAssigneeIds.length === 0)}
-                                    className={cn("flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg", (todoStep === 1 && (!newTodoTitle.trim() || selectedAssigneeIds.length === 0)) ? "bg-gray-200 shadow-none" : themeBg)}
+                                    onPress={() => setTodoStep(todoStep - 1)}
+                                    className="flex-1 py-5 rounded-3xl bg-gray-100 items-center justify-center border-2 border-gray-200"
                                 >
-                                    <Text className="text-white font-black">{todoStep === 2 ? "할 일 등록! ✨" : "다음 단계"}</Text>
+                                    <Text className="text-gray-600 font-black">이전</Text>
                                 </TouchableOpacity>
-                            </View>
+                            )}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (todoStep < 2) setTodoStep(2);
+                                    else handleAddTodo();
+                                }}
+                                disabled={todoStep === 1 && (!newTodoTitle.trim() || selectedAssigneeIds.length === 0)}
+                                className={cn("flex-[2] py-5 rounded-3xl items-center justify-center shadow-lg", (todoStep === 1 && (!newTodoTitle.trim() || selectedAssigneeIds.length === 0)) ? "bg-gray-200 shadow-none" : themeBg)}
+                            >
+                                <Text className="text-white font-black">{todoStep === 2 ? "할 일 등록! ✨" : "다음 단계"}</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableWithoutFeedback>
+                    </View>
                 </KeyboardAvoidingView>
             </Modal>
 
