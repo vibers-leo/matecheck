@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; color: #333; }
+    .container { max-width: 480px; margin: 0 auto; }
+    .btn { display: inline-block; padding: 12px 24px; background: #0066FF; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; }
+    .code { font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #0066FF; background: #F0F4FF; padding: 16px; border-radius: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>비밀번호 재설정</h2>
+    <p><%= @user.nickname || @user.email %>님, 안녕하세요!</p>
+    <p>비밀번호 재설정이 요청되었습니다. 아래 토큰을 앱에 입력해주세요:</p>
+    <div class="code"><%= @token[0..7].upcase %></div>
+    <p style="color: #999; font-size: 14px;">이 토큰은 2시간 동안 유효합니다.</p>
+    <p style="color: #999; font-size: 14px;">본인이 요청하지 않았다면 이 이메일을 무시하세요.</p>
+  </div>
+</body>
+</html>
