@@ -63,3 +63,7 @@ gem "httparty", "~> 0.24.2"
 
 # 페이지네이션
 gem "kaminari"
+
+# 에러 추적 (활성화 시 bundle install 필요)
+# gem "sentry-ruby"
+# gem "sentry-rails"
