@@ -2,6 +2,8 @@ Rails.application.routes.draw do
   post '/signup', to: 'users#create'
   post '/login', to: 'sessions#create'
   post '/auth/kakao', to: 'kakao_auth#create'
+  post '/auth/google', to: 'google_auth#create'
+  post '/auth/naver', to: 'naver_auth#create'
   post '/password/forgot', to: 'password_resets#create'
   post '/password/reset', to: 'password_resets#update'
   patch '/profile', to: 'users#update'
