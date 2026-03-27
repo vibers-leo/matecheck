@@ -91,7 +91,7 @@ export default function LoginScreen() {
                     </TouchableOpacity>
 
                     <Animated.View entering={FadeInDown.duration(800).springify()}>
-                        <Text className="text-4xl font-extrabold text-gray-900 mb-3">반가워요! 👋</Text>
+                        <Text className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">반가워요! 👋</Text>
                         <Text className="text-base text-gray-500 leading-6">
                             가족과의 소중한 일상,{'\n'}메이트체크에서 다시 이어가세요.
                         </Text>
@@ -101,7 +101,7 @@ export default function LoginScreen() {
                 <Animated.View entering={FadeInDown.delay(200).duration(800).springify()} className="w-full">
                     {/* Error Message */}
                     {errorMessage ? (
-                        <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex-row items-center">
+                        <View className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex-row items-center">
                             <Ionicons name="alert-circle" size={20} color="#EF4444" />
                             <Text className="text-red-600 ml-2 flex-1">{errorMessage}</Text>
                         </View>
@@ -117,7 +117,7 @@ export default function LoginScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="example@matecheck.com"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             editable={!isLoading}
@@ -125,7 +125,7 @@ export default function LoginScreen() {
                     </View>
 
                     {/* Password Input */}
-                    <View className="mb-8">
+                    <View className="mb-10">
                         <Text className="text-sm font-bold text-gray-700 mb-2 ml-1">비밀번호</Text>
                         <TextInput
                             value={password}
@@ -134,7 +134,7 @@ export default function LoginScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="비밀번호를 입력해주세요"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
                             secureTextEntry
                             editable={!isLoading}
                             onSubmitEditing={handleLogin}
@@ -146,7 +146,7 @@ export default function LoginScreen() {
                     <TouchableOpacity
                         onPress={handleLogin}
                         disabled={isLoading}
-                        className={`w-full py-4 rounded-xl items-center shadow-lg shadow-orange-200 mb-6 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
+                        className={`w-full py-5 rounded-full items-center shadow-premium mb-8 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
                             }`}
                     >
                         <Text className="text-white font-bold text-lg">

@@ -88,7 +88,7 @@ export default function HomeScreen() {
 
     const SectionHeader = ({ title, onPress }: { title: string, onPress: () => void }) => (
         <View className="flex-row justify-between items-center mb-3 mt-6">
-            <Text className="text-lg font-bold text-gray-900">{title}</Text>
+            <Text className="text-lg font-bold text-gray-900 tracking-tight">{title}</Text>
             <TouchableOpacity onPress={onPress}>
                 <Text className="text-gray-400 text-sm">{language === 'ko' ? '더보기 ›' : 'More ›'}</Text>
             </TouchableOpacity>
@@ -155,10 +155,10 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <View className="px-6 gap-6">
+                <View className="px-6 gap-8">
 
                     {/* 1. Smart Briefing Card (Modern Dark) */}
-                    <Animated.View entering={FadeInUp.delay(200)} className="bg-gray-900 rounded-[32px] p-6 shadow-xl shadow-gray-200">
+                    <Animated.View entering={FadeInUp.delay(200)} className="bg-gray-900 rounded-[32px] p-8 shadow-premium">
                         <View className="flex-row items-center justify-between mb-6">
                             <View className="flex-row items-center gap-3">
                                 <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center">
@@ -226,7 +226,7 @@ export default function HomeScreen() {
                     <View>
                         <SectionHeader title="돌아오는 일정 📅" onPress={() => router.push('/(tabs)/plan')} />
                         {upcomingEvents.length === 0 ? (
-                            <View className="bg-gray-50 p-8 rounded-[32px] items-center justify-center border border-gray-100/50">
+                            <View className="bg-gray-50 p-8 rounded-3xl items-center justify-center border border-gray-100/50 shadow-card">
                                 <Text className="text-4xl mb-4 opacity-30">🗓️</Text>
                                 <Text className="text-gray-400 font-medium">등록된 일정이 없어요</Text>
                             </View>
@@ -238,7 +238,7 @@ export default function HomeScreen() {
 
                                     return (
                                         <Animated.View key={evt.id} entering={FadeInDown.delay(index * 100 + 300)}
-                                            className="flex-row bg-white p-5 rounded-3xl border border-gray-100 items-center shadow-sm"
+                                            className="flex-row bg-white p-5 rounded-3xl border border-gray-100 items-center shadow-card"
                                         >
                                             {/* Date Box (Modern) */}
                                             <View className={cn("w-14 h-14 rounded-2xl items-center justify-center mr-5", isToday ? "bg-gray-900" : "bg-gray-50")}>
@@ -282,7 +282,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                         onPress={() => router.push('/life_info')}
                         activeOpacity={0.9}
-                        className="bg-indigo-600 rounded-[32px] p-6 shadow-xl shadow-indigo-200 overflow-hidden relative"
+                        className="bg-indigo-600 rounded-3xl p-8 shadow-premium overflow-hidden relative"
                     >
                         {/* Background Deco */}
                         <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
@@ -293,7 +293,7 @@ export default function HomeScreen() {
                                 <View className="bg-white/20 px-3 py-1 rounded-full self-start mb-3">
                                     <Text className="text-white text-[10px] font-bold">✨ AI 맞춤 추천</Text>
                                 </View>
-                                <Text className="text-white text-xl font-black mb-1 leading-tight">
+                                <Text className="text-white text-xl font-black mb-1 leading-tight tracking-tight">
                                     놓치고 있는 혜택,{'\n'}지금 바로 확인하세요!
                                 </Text>
                                 <Text className="text-indigo-200 text-xs font-medium">

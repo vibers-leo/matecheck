@@ -403,12 +403,12 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         padding: 16,
-        gap: 16,
+        gap: 20,
     },
     briefingCard: {
         backgroundColor: TDS_COLORS.blue,
-        borderRadius: 28,
-        padding: 24,
+        borderRadius: 32,
+        padding: 28,
         ...TDS_SHADOW.premium,
         ...Platform.select({ web: { boxShadow: '0 8px 20px rgba(49, 130, 246, 0.25)' } }),
     },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '900',
         lineHeight: 30,
-        letterSpacing: -0.5,
+        letterSpacing: -0.8,
         marginBottom: 20,
     },
     cardHeader: {
@@ -461,8 +461,8 @@ const styles = StyleSheet.create({
     },
     whiteCard: {
         backgroundColor: TDS_COLORS.white,
-        borderRadius: 28,
-        padding: 24,
+        borderRadius: 32,
+        padding: 28,
         ...TDS_ELEVATION.card,
         ...Platform.select({ web: { boxShadow: '0 2px 10px rgba(0,0,0,0.04)' } }),
     },
@@ -476,6 +476,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: TDS_COLORS.grey900,
+        letterSpacing: -0.5,
     },
     moreText: {
         fontSize: 13,
@@ -509,8 +510,8 @@ const styles = StyleSheet.create({
     },
     banner: {
         backgroundColor: TDS_COLORS.white,
-        borderRadius: 28,
-        padding: 24,
+        borderRadius: 32,
+        padding: 28,
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
@@ -527,6 +528,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: TDS_COLORS.grey900,
+        letterSpacing: -0.3,
     },
     bannerEmoji: {
         width: 60,

@@ -5,6 +5,16 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      borderRadius: {
+        'premium': '2rem',
+      },
+      boxShadow: {
+        'premium': '0 20px 60px -15px rgba(255, 127, 80, 0.08)',
+        'card': '0 4px 24px -4px rgba(0, 0, 0, 0.06)',
+      },
+      transitionTimingFunction: {
+        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
       colors: {
         primary: {
           DEFAULT: '#FF7F50', // Coral

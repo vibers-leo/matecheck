@@ -100,7 +100,7 @@ export default function SignupScreen() {
                     </TouchableOpacity>
 
                     <Animated.View entering={FadeInDown.duration(800).springify()}>
-                        <Text className="text-4xl font-extrabold text-gray-900 mb-3">환영합니다! 🎉</Text>
+                        <Text className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">환영합니다! 🎉</Text>
                         <Text className="text-base text-gray-500 leading-6">
                             메이트체크와 함께{'\n'}우리 가족만의 특별한 공간을 만들어요.
                         </Text>
@@ -110,7 +110,7 @@ export default function SignupScreen() {
                 <Animated.View entering={FadeInDown.delay(200).duration(800).springify()} className="w-full">
                     {/* Error Message */}
                     {errorMessage ? (
-                        <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex-row items-start">
+                        <View className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex-row items-start">
                             <Ionicons name="alert-circle" size={20} color="#EF4444" style={{ marginTop: 2 }} />
                             <Text className="text-red-600 ml-2 flex-1">{errorMessage}</Text>
                         </View>
@@ -126,7 +126,7 @@ export default function SignupScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="example@matecheck.com"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             editable={!isLoading}
@@ -143,14 +143,14 @@ export default function SignupScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="영문, 숫자 포함 8자리 이상"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
                             secureTextEntry
                             editable={!isLoading}
                         />
                     </View>
 
                     {/* Confirm Password Input */}
-                    <View className="mb-8">
+                    <View className="mb-10">
                         <Text className="text-sm font-bold text-gray-700 mb-2 ml-1">비밀번호 확인</Text>
                         <TextInput
                             value={confirmPassword}
@@ -159,7 +159,7 @@ export default function SignupScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="비밀번호 다시 입력"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-gray-900 text-base"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
                             secureTextEntry
                             editable={!isLoading}
                         />
@@ -169,7 +169,7 @@ export default function SignupScreen() {
                     <TouchableOpacity
                         onPress={handleSignup}
                         disabled={isLoading}
-                        className={`w-full py-4 rounded-xl items-center shadow-lg shadow-orange-200 mb-6 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
+                        className={`w-full py-5 rounded-full items-center shadow-premium mb-8 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
                             }`}
                     >
                         <Text className="text-white font-bold text-lg">
