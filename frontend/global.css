@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Supanova Design System (NativeWind) */
+@layer base {
+  * {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply inline-block rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.15em] font-medium bg-primary/10 text-primary;
+  }
+
+  .btn-supanova {
+    @apply flex items-center justify-center gap-3 rounded-full px-8 py-4 font-semibold;
+  }
+
+  .card-premium {
+    @apply p-1.5 rounded-3xl bg-black/[0.03];
+  }
+
+  .card-premium-inner {
+    @apply bg-white rounded-[22px] p-6;
+  }
+}
