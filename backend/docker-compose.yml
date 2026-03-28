@@ -6,7 +6,8 @@ services:
     environment:
       POSTGRES_DB: matecheck_production
       POSTGRES_USER: ${POSTGRES_USER:-matecheck}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-matecheck_prod_pw}
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -28,7 +29,7 @@ services:
     environment:
       RAILS_ENV: production
       PORT: 8000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-matecheck}:${POSTGRES_PASSWORD}@matecheck-db:5432/matecheck_production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-matecheck}:${POSTGRES_PASSWORD:-matecheck_prod_pw}@matecheck-db:5432/matecheck_production
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_generate_a_real_key}
       RAILS_LOG_LEVEL: info
