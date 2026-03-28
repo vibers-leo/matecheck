@@ -15,13 +15,8 @@ class NestsController < ApplicationController
     nest = Nest.new(name: nest_params[:name], theme_id: nest_params[:theme_id], invite_code: invite_code, image_url: nest_params[:image_url])
     
     if nest.save
-      user = User.find_by(email: params[:email]) 
-      if user
-        user.update(nest: nest, nest_status: 'active', nickname: params.dig(:user, :nickname))
-        render json: nest_data(nest), status: :created
-      else
-        render json: { error: "User not found" }, status: :not_found
-      end
+      current_user.update(nest: nest, nest_status: 'active', nickname: params.dig(:user, :nickname))
+      render json: nest_data(nest), status: :created
     else
       render json: { errors: nest.errors.full_messages }, status: :unprocessable_entity
     end
@@ -30,13 +25,8 @@ class NestsController < ApplicationController
   def join
     nest = Nest.find_by(invite_code: params[:invite_code])
     if nest
-      user = User.find_by(email: params[:email])
-      if user
-        user.update(nest: nest, nest_status: 'pending')
-        render json: { message: "Join request sent", status: "pending" }, status: :ok
-      else
-         render json: { error: "User not found" }, status: :not_found
-      end
+      current_user.update(nest: nest, nest_status: 'pending')
+      render json: { message: "Join request sent", status: "pending" }, status: :ok
     else
       render json: { error: "Invalid invite code" }, status: :not_found
     end
