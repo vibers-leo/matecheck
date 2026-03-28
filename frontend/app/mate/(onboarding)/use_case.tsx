@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import {
-    View, Text, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView,
+    View, Text, TouchableOpacity, SafeAreaView,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
-import { TDS_COLORS, TDS_TYPOGRAPHY, TDS_RADIUS, TDS_ELEVATION } from '../../../constants/DesignTokens';
 import { NEST_TYPE_META, NestType } from '../../../constants/NestTypeDefaults';
-
-const { height } = Dimensions.get('window');
+import { cn } from '../../../lib/utils';
 
 const TYPES: NestType[] = ['dormitory', 'couple', 'family'];
+
+/* 온보딩 진행 표시기 */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+    return (
+        <View className="flex-row gap-2 mb-6">
+            {Array.from({ length: total }).map((_, i) => (
+                <View
+                    key={i}
+                    className={cn(
+                        "h-1 rounded-full flex-1",
+                        i < current ? "bg-primary" : "bg-gray-100"
+                    )}
+                />
+            ))}
+        </View>
+    );
+}
 
 export default function UseCaseScreen() {
     const router = useRouter();
@@ -25,17 +40,25 @@ export default function UseCaseScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView className="flex-1 bg-white px-5">
             <Stack.Screen options={{ headerShown: false }} />
 
-            <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
-                <Text style={styles.title}>어떤 보금자리인가요?</Text>
-                <Text style={styles.subtitle}>
-                    선택한 유형에 맞는{'\n'}맞춤 기능을 제공해드려요
+            <Animated.View entering={FadeInDown.duration(600)} className="pt-10">
+                {/* 진행 표시기 */}
+                <StepIndicator current={1} total={3} />
+
+                {/* Eyebrow + 제목 */}
+                <Text className="eyebrow text-primary mb-2">NEST TYPE</Text>
+                <Text className="text-heading-1 text-gray-900 tracking-tight leading-snug mb-1">
+                    어떤 보금자리인가요?
+                </Text>
+                <Text className="text-body text-gray-400">
+                    선택한 유형에 맞는 맞춤 기능을 제공해드려요
                 </Text>
             </Animated.View>
 
-            <View style={styles.cardsContainer}>
+            {/* 유형 선택 카드 */}
+            <View className="flex-1 justify-center gap-3">
                 {TYPES.map((type, idx) => {
                     const meta = NEST_TYPE_META[type];
                     const isSelected = selected === type;
@@ -47,31 +70,35 @@ export default function UseCaseScreen() {
                         >
                             <TouchableOpacity
                                 onPress={() => setSelected(type)}
-                                style={[
-                                    styles.card,
-                                    isSelected && { borderColor: meta.color, borderWidth: 2.5 },
-                                ]}
+                                className={cn(
+                                    "card-mobile flex-row items-center",
+                                    isSelected && "border-2 border-primary"
+                                )}
                                 activeOpacity={0.85}
                             >
                                 {/* 선택 인디케이터 */}
-                                <View style={[
-                                    styles.selectCircle,
-                                    isSelected && { backgroundColor: meta.color, borderColor: meta.color },
-                                ]}>
+                                <View className={cn(
+                                    "w-5 h-5 rounded-full border-2 items-center justify-center mr-3",
+                                    isSelected ? "bg-primary border-primary" : "border-gray-300"
+                                )}>
                                     {isSelected && (
-                                        <Text style={styles.checkMark}>✓</Text>
+                                        <Text className="text-white text-[10px] font-bold">✓</Text>
                                     )}
                                 </View>
 
-                                {/* 아이콘 + 내용 */}
-                                <View style={[styles.iconBox, { backgroundColor: meta.color + '18' }]}>
-                                    <Text style={styles.emoji}>{meta.emoji}</Text>
+                                {/* 아이콘 */}
+                                <View
+                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                                    style={{ backgroundColor: meta.color + '18' }}
+                                >
+                                    <Text className="text-2xl">{meta.emoji}</Text>
                                 </View>
 
-                                <View style={styles.cardContent}>
-                                    <Text style={styles.cardTitle}>{meta.title}</Text>
-                                    <Text style={styles.cardSubtitle}>{meta.subtitle}</Text>
-                                    <Text style={styles.cardDesc}>{meta.description}</Text>
+                                {/* 내용 */}
+                                <View className="flex-1">
+                                    <Text className="section-header text-gray-900 mb-0.5">{meta.title}</Text>
+                                    <Text className="text-xs text-gray-500">{meta.subtitle}</Text>
+                                    <Text className="caption mt-1">{meta.description}</Text>
                                 </View>
                             </TouchableOpacity>
                         </Animated.View>
@@ -79,129 +106,26 @@ export default function UseCaseScreen() {
                 })}
             </View>
 
-            <Animated.View entering={FadeInUp.delay(600).duration(500)} style={styles.bottom}>
+            {/* 하단 고정 CTA */}
+            <Animated.View entering={FadeInUp.delay(600).duration(500)} className="pb-8 gap-3">
                 <TouchableOpacity
                     onPress={handleNext}
-                    style={[styles.nextBtn, !selected && styles.nextBtnDisabled]}
                     disabled={!selected}
+                    className={cn(
+                        "btn-primary w-full",
+                        selected ? "bg-primary" : "bg-gray-200"
+                    )}
                 >
-                    <Text style={styles.nextBtnText}>
+                    <Text className={cn(
+                        "font-semibold text-base",
+                        selected ? "text-white" : "text-gray-400"
+                    )}>
                         {selected ? `${NEST_TYPE_META[selected].title} 선택하기` : '유형을 선택해주세요'}
                     </Text>
                 </TouchableOpacity>
 
-                <Text style={styles.hint}>나중에 설정에서 언제든지 변경할 수 있어요</Text>
+                <Text className="caption text-center">나중에 설정에서 언제든지 변경할 수 있어요</Text>
             </Animated.View>
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: TDS_COLORS.white,
-        paddingHorizontal: 24,
-    },
-    header: {
-        paddingTop: 40,
-        paddingBottom: 24,
-    },
-    title: {
-        ...TDS_TYPOGRAPHY.display2,
-        color: TDS_COLORS.grey900,
-        marginBottom: 8,
-    },
-    subtitle: {
-        ...TDS_TYPOGRAPHY.body1,
-        color: TDS_COLORS.grey500,
-        lineHeight: 22,
-    },
-
-    cardsContainer: {
-        flex: 1,
-        gap: 12,
-        justifyContent: 'center',
-    },
-    card: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: TDS_COLORS.white,
-        borderRadius: TDS_RADIUS.xl,
-        padding: 20,
-        borderWidth: 1.5,
-        borderColor: TDS_COLORS.grey200,
-        ...TDS_ELEVATION.card,
-    },
-
-    selectCircle: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        borderWidth: 2,
-        borderColor: TDS_COLORS.grey300,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 14,
-        flexShrink: 0,
-    },
-    checkMark: {
-        color: TDS_COLORS.white,
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-
-    iconBox: {
-        width: 52,
-        height: 52,
-        borderRadius: TDS_RADIUS.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 16,
-        flexShrink: 0,
-    },
-    emoji: {
-        fontSize: 28,
-    },
-
-    cardContent: {
-        flex: 1,
-    },
-    cardTitle: {
-        ...TDS_TYPOGRAPHY.h3,
-        color: TDS_COLORS.grey900,
-        marginBottom: 2,
-    },
-    cardSubtitle: {
-        ...TDS_TYPOGRAPHY.caption1,
-        color: TDS_COLORS.grey600,
-        marginBottom: 4,
-    },
-    cardDesc: {
-        ...TDS_TYPOGRAPHY.caption2,
-        color: TDS_COLORS.grey400,
-        lineHeight: 16,
-    },
-
-    bottom: {
-        paddingBottom: 32,
-        gap: 12,
-    },
-    nextBtn: {
-        backgroundColor: TDS_COLORS.blue,
-        borderRadius: TDS_RADIUS.lg,
-        paddingVertical: 16,
-        alignItems: 'center',
-    },
-    nextBtnDisabled: {
-        backgroundColor: TDS_COLORS.grey300,
-    },
-    nextBtnText: {
-        ...TDS_TYPOGRAPHY.h3,
-        color: TDS_COLORS.white,
-    },
-    hint: {
-        ...TDS_TYPOGRAPHY.caption2,
-        color: TDS_COLORS.grey400,
-        textAlign: 'center',
-    },
-});

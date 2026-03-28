@@ -159,243 +159,241 @@ export default function RulesScreen() {
     };
 
     // --- COMPONENTS ---
+    {/* 목표 섹션 컴포넌트 - Supanova 카드 + 프로그레스 바 */}
     const GoalSection = ({ type, label, icon }: { type: Goal['type'], label: string, icon: string }) => {
         const sectionGoals = goals.filter((g: any) => g.type === type);
 
         if (sectionGoals.length === 0) return null;
 
         return (
-            <View className="mb-8">
-                <View className="flex-row items-center mb-4 px-2">
-                    <Text className="text-2xl mr-2">{icon}</Text>
-                    <Text className="text-xl font-bold text-gray-800">{label}</Text>
+            <View className="mb-4">
+                <View className="flex-row items-center mb-2 px-1">
+                    <Text className="text-sm mr-1.5">{icon}</Text>
+                    <Text className="text-sm font-bold text-gray-400 uppercase tracking-wider">{label}</Text>
                 </View>
 
-                {sectionGoals.map((goal: Goal, index: number) => (
-                    <Animated.View
-                        key={goal.id}
-                        entering={FadeInUp.delay(index * 100)}
-                        layout={Layout.springify()}
-                        className="bg-white p-5 rounded-2xl mb-3 shadow-sm border border-gray-100"
-                    >
-                        <View className="flex-row justify-between items-center mb-3">
-                            <View className="flex-1 flex-row items-center mr-2">
-                                {goal.current >= goal.target && <Text className="mr-2">🎉</Text>}
-                                <Text className={cn("text-lg font-bold", goal.current >= goal.target ? "text-gray-400 line-through" : "text-gray-800")} numberOfLines={1}>
-                                    {goal.title}
-                                </Text>
-                            </View>
-
-                            <TouchableOpacity onPress={() => confirmDeleteGoal(goal.id)} className="p-1">
-                                <Ionicons name="trash-outline" size={18} color="#D1D5DB" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View className="flex-row items-center">
-                            <TouchableOpacity
-                                onPress={() => decrementGoalProgress(goal.id)}
-                                className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center border border-gray-200"
-                                disabled={goal.current <= 0}
-                            >
-                                <Ionicons name="remove" size={16} color={goal.current <= 0 ? "#D1D5DB" : "#4B5563"} />
-                            </TouchableOpacity>
-
-                            <View className="flex-1 mx-3">
-                                <View className="flex-row justify-between items-end mb-1.5 px-1">
-                                    <Text className="text-xs font-bold text-gray-500">
-                                        {goal.current}
-                                        <Text className="font-normal text-gray-400"> / {goal.target} {goal.unit}</Text>
+                <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                    {sectionGoals.map((goal: Goal, index: number) => (
+                        <Animated.View
+                            key={goal.id}
+                            entering={FadeInUp.delay(index * 80)}
+                            layout={Layout.springify()}
+                            className={cn("p-5", index !== sectionGoals.length - 1 && "border-b border-gray-100")}
+                        >
+                            <View className="flex-row justify-between items-center mb-3">
+                                <View className="flex-1 flex-row items-center mr-2">
+                                    {goal.current >= goal.target && <Text className="mr-1.5">🎉</Text>}
+                                    <Text className={cn("text-base font-bold", goal.current >= goal.target ? "text-gray-300 line-through" : "text-gray-900")} numberOfLines={1}>
+                                        {goal.title}
                                     </Text>
-                                    <Text className="text-[10px] text-gray-400">{Math.min(Math.round((goal.current / goal.target) * 100), 100)}%</Text>
                                 </View>
-                                <View className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                                    <View
-                                        className={cn("h-full rounded-full", themeBg)}
-                                        style={{ width: `${Math.min((goal.current / goal.target) * 100, 100)}%` }}
-                                    />
-                                </View>
+
+                                <TouchableOpacity onPress={() => confirmDeleteGoal(goal.id)} className="p-1">
+                                    <Ionicons name="trash-outline" size={16} color="#D1D5DB" />
+                                </TouchableOpacity>
                             </View>
 
-                            <TouchableOpacity
-                                onPress={() => incrementGoalProgress(goal.id)}
-                                className={cn("w-8 h-8 rounded-full items-center justify-center shadow-sm", themeBg)}
-                                disabled={goal.current >= goal.target}
-                                style={{ opacity: goal.current >= goal.target ? 0.5 : 1 }}
-                            >
-                                <Ionicons name="add" size={16} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                    </Animated.View>
-                ))}
+                            <View className="flex-row items-center">
+                                <TouchableOpacity
+                                    onPress={() => decrementGoalProgress(goal.id)}
+                                    className="w-7 h-7 bg-gray-50 rounded-full items-center justify-center"
+                                    disabled={goal.current <= 0}
+                                >
+                                    <Ionicons name="remove" size={14} color={goal.current <= 0 ? "#D1D5DB" : "#6B7280"} />
+                                </TouchableOpacity>
+
+                                <View className="flex-1 mx-3">
+                                    <View className="flex-row justify-between items-end mb-1 px-0.5">
+                                        <Text className="text-xs font-bold text-gray-500">
+                                            {goal.current}
+                                            <Text className="font-normal text-gray-400"> / {goal.target} {goal.unit}</Text>
+                                        </Text>
+                                        <Text className="text-[10px] text-gray-300 font-bold">{Math.min(Math.round((goal.current / goal.target) * 100), 100)}%</Text>
+                                    </View>
+                                    <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <View
+                                            className={cn("h-full rounded-full", themeBg)}
+                                            style={{ width: `${Math.min((goal.current / goal.target) * 100, 100)}%` }}
+                                        />
+                                    </View>
+                                </View>
+
+                                <TouchableOpacity
+                                    onPress={() => incrementGoalProgress(goal.id)}
+                                    className={cn("w-7 h-7 rounded-full items-center justify-center", themeBg)}
+                                    disabled={goal.current >= goal.target}
+                                    style={{ opacity: goal.current >= goal.target ? 0.4 : 1 }}
+                                >
+                                    <Ionicons name="add" size={14} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                        </Animated.View>
+                    ))}
+                </View>
             </View>
         );
     };
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Header (Modern Simple Style) */}
-            <View className="pt-12 pb-6 px-6 bg-white shadow-sm rounded-b-[40px] z-20 mb-6 flex-row justify-between items-center">
+            {/* 헤더 - Supanova 스타일 */}
+            <View className="pt-14 pb-5 px-5 bg-white z-20 flex-row justify-between items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12 }}>
                 <View className="flex-row items-center gap-2">
-                    <Text className="text-2xl font-black text-gray-900">
+                    <Text className="text-xl font-bold tracking-tight text-gray-900">
                         {language === 'ko' ? "약속" : "Promises"}
                     </Text>
-                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-1">
-                        <Ionicons name="help-circle-outline" size={24} color="#9CA3AF" />
+                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-0.5">
+                        <Ionicons name="help-circle-outline" size={20} color="#D1D5DB" />
                     </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                    onPress={handleAddButtonPress}
-                    className={cn("w-12 h-12 rounded-full items-center justify-center shadow-lg shadow-orange-200", themeBg)}
-                >
-                    <Ionicons name="add" size={28} color="white" />
-                </TouchableOpacity>
             </View>
 
-            {/* Content Info */}
-            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+            {/* 메인 콘텐츠 */}
+            <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>
 
-                {/* Goals Section */}
-                <View className="mb-10">
-                    <View className="flex-row items-center mb-4 px-1">
-                        <Text className="text-xl font-black text-gray-900">🏆 {language === 'ko' ? "우리의 목표" : "Our Goals"}</Text>
-                    </View>
+                {/* 목표 섹션 */}
+                <View className="mb-6">
+                    <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">
+                        {language === 'ko' ? "우리의 목표" : "Our Goals"}
+                    </Text>
 
                     {goals.length === 0 ? (
+                        /* 빈 상태 - Supanova 스타일 */
                         <TouchableOpacity
                             onPress={() => setGoalModalVisible(true)}
-                            className="bg-white rounded-3xl p-10 items-center justify-center border border-gray-100 shadow-sm active:bg-gray-50 bg-white"
+                            className="bg-white rounded-3xl p-10 items-center justify-center active:bg-gray-50"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                         >
-                            <View className="w-16 h-16 bg-yellow-50 rounded-full items-center justify-center mb-4">
-                                <Ionicons name="trophy-outline" size={32} color="#fbbf24" />
-                            </View>
-                            <Text className="text-gray-900 font-bold text-lg mb-2">
+                            <Ionicons name="trophy-outline" size={40} color="#D1D5DB" />
+                            <Text className="text-gray-300 font-bold text-sm mt-3">
                                 {language === 'ko' ? "목표를 세워보세요" : "Set your goals"}
-                            </Text>
-                            <Text className="text-gray-400 text-center text-sm leading-5">
-                                {language === 'ko' ? "함께 이루고 싶은 꿈이 있나요?\n터치해서 목표를 추가해보세요!" : "Dreaming of something together?\nTap to add a new goal!"}
                             </Text>
                         </TouchableOpacity>
                     ) : (
                         <>
-                            <GoalSection type="vision" label={language === 'ko' ? "우리의 꿈 (Vision)" : "Our Vision"} icon="✨" />
-                            <GoalSection type="year" label={language === 'ko' ? "올해의 목표" : "Yearly Goals"} icon="📅" />
-                            <GoalSection type="month" label={language === 'ko' ? "이번 달 목표" : "Monthly Goals"} icon="🎯" />
-                            <GoalSection type="week" label={language === 'ko' ? "이번 주 목표" : "Weekly Goals"} icon="🔥" />
+                            <GoalSection type="vision" label={language === 'ko' ? "Vision" : "Our Vision"} icon="✨" />
+                            <GoalSection type="year" label={language === 'ko' ? "올해 목표" : "Yearly"} icon="📅" />
+                            <GoalSection type="month" label={language === 'ko' ? "이번 달" : "Monthly"} icon="🎯" />
+                            <GoalSection type="week" label={language === 'ko' ? "이번 주" : "Weekly"} icon="🔥" />
                         </>
                     )}
                 </View>
 
-                {/* Rules Section (Moved to Bottom) */}
+                {/* 규칙 섹션 - Supanova 리스트 카드 */}
                 <View className="mb-24">
-                    <View className="flex-row items-center mb-4 px-1">
-                        <Text className="text-xl font-black text-gray-900">📜 {language === 'ko' ? "우리 집 규칙" : "House Rules"}</Text>
-                    </View>
+                    <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">
+                        {language === 'ko' ? "우리 집 규칙" : "House Rules"}
+                    </Text>
 
                     {rules.length === 0 ? (
+                        /* 빈 상태 */
                         <TouchableOpacity
                             onPress={() => setRuleModalVisible(true)}
-                            className="bg-white rounded-3xl p-10 items-center justify-center border border-gray-100 shadow-sm active:bg-gray-50"
+                            className="bg-white rounded-3xl p-10 items-center justify-center active:bg-gray-50"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                         >
-                            <View className="w-16 h-16 bg-indigo-50 rounded-full items-center justify-center mb-4">
-                                <Ionicons name="document-text-outline" size={32} color="#6366f1" />
-                            </View>
-                            <Text className="text-gray-900 font-bold text-lg mb-2">
+                            <Ionicons name="document-text-outline" size={40} color="#D1D5DB" />
+                            <Text className="text-gray-300 font-bold text-sm mt-3">
                                 {language === 'ko' ? "규칙이 비어있어요" : "No rules yet"}
-                            </Text>
-                            <Text className="text-gray-400 text-center text-sm leading-5">
-                                {language === 'ko' ? "서로를 위한 약속을 만들어볼까요?\n터치해서 첫 규칙을 추가해보세요!" : "Create promises for each other.\nTap to add your first rule!"}
                             </Text>
                         </TouchableOpacity>
                     ) : (
-                        rules.map((rule: HouseRule, index: number) => {
-                            const typeInfo = getRuleTypeInfo(rule.rule_type);
-                            return (
-                                <Animated.View
-                                    key={rule.id}
-                                    entering={FadeInDown.delay(index * 100)}
-                                    className="bg-white rounded-2xl p-5 mb-3 shadow-sm border border-gray-100"
-                                >
-                                    <View className="flex-row items-start justify-between mb-2">
-                                        <View className="flex-row items-center flex-1">
-                                            <View className={`${typeInfo.color} w-10 h-10 rounded-xl items-center justify-center mr-3`}>
-                                                <Ionicons name={typeInfo.icon as any} size={20} color="white" />
+                        /* 규칙 카드 - 체크리스트 형태 */
+                        <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                            {rules.map((rule: HouseRule, index: number) => {
+                                const typeInfo = getRuleTypeInfo(rule.rule_type);
+                                return (
+                                    <Animated.View
+                                        key={rule.id}
+                                        entering={FadeInDown.delay(index * 80)}
+                                        className={cn("py-4 px-5", index !== rules.length - 1 && "border-b border-gray-100")}
+                                    >
+                                        <View className="flex-row items-center">
+                                            <View className={`${typeInfo.color} w-8 h-8 rounded-lg items-center justify-center mr-3`}>
+                                                <Ionicons name={typeInfo.icon as any} size={16} color="white" />
                                             </View>
                                             <View className="flex-1">
-                                                <Text className="text-xs text-gray-400 mb-0.5">{typeInfo.label}</Text>
-                                                <Text className="text-lg font-bold text-gray-900">{rule.title}</Text>
+                                                <Text className="text-base font-bold text-gray-900">{rule.title}</Text>
+                                                {rule.description ? (
+                                                    <Text className="text-gray-400 text-sm mt-0.5">{rule.description}</Text>
+                                                ) : null}
                                             </View>
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    Alert.alert(
+                                                        tCommon.delete,
+                                                        language === 'ko' ? '이 규칙을 삭제하시겠습니까?' : 'Delete this rule?',
+                                                        [
+                                                            { text: tCommon.cancel, style: 'cancel' },
+                                                            { text: tCommon.delete, style: 'destructive', onPress: () => deleteRule(rule.id) }
+                                                        ]
+                                                    );
+                                                }}
+                                                className="p-1 ml-2"
+                                            >
+                                                <Ionicons name="trash-outline" size={16} color="#D1D5DB" />
+                                            </TouchableOpacity>
                                         </View>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                Alert.alert(
-                                                    tCommon.delete,
-                                                    language === 'ko' ? '이 규칙을 삭제하시겠습니까?' : 'Delete this rule?',
-                                                    [
-                                                        { text: tCommon.cancel, style: 'cancel' },
-                                                        { text: tCommon.delete, style: 'destructive', onPress: () => deleteRule(rule.id) }
-                                                    ]
-                                                );
-                                            }}
-                                            className="p-2 -mr-2"
-                                        >
-                                            <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                    {rule.description ? (
-                                        <Text className="text-gray-500 leading-5 text-sm ml-[52px]">{rule.description}</Text>
-                                    ) : null}
-                                </Animated.View>
-                            );
-                        })
+                                    </Animated.View>
+                                );
+                            })}
+                        </View>
                     )}
                 </View>
             </ScrollView>
 
-            {/* --- SELECTION MODAL --- */}
-            <Modal visible={selectionModalVisible} animationType="fade" transparent>
+            {/* FAB 추가 버튼 - Supanova 스타일 */}
+            <TouchableOpacity
+                onPress={handleAddButtonPress}
+                className={cn("absolute bottom-8 right-5 w-14 h-14 rounded-full items-center justify-center z-30", themeBg)}
+                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+            >
+                <Ionicons name="add" size={28} color="white" />
+            </TouchableOpacity>
+
+            {/* 선택 모달 - Supanova 바텀시트 */}
+            <Modal visible={selectionModalVisible} animationType="slide" transparent>
                 <TouchableOpacity
-                    className="flex-1 bg-black/50 justify-end pb-10 px-4"
+                    className="flex-1 bg-black/40 justify-end"
                     activeOpacity={1}
                     onPress={() => setSelectionModalVisible(false)}
                 >
-                    <Animated.View
-                        entering={FadeInUp.springify()}
-                        className="bg-white rounded-2xl overflow-hidden shadow-xl"
-                    >
+                    <View className="bg-white rounded-t-[32px] pb-10">
+                        {/* 핸들바 */}
+                        <View className="items-center pt-3 pb-4">
+                            <View className="w-10 h-1 rounded-full bg-gray-200" />
+                        </View>
                         <TouchableOpacity
                             onPress={() => handleSelectAction('rule')}
-                            className="p-5 border-b border-gray-100 flex-row items-center justify-center bg-gray-50 active:bg-gray-100"
+                            className="py-4 px-6 flex-row items-center border-b border-gray-100 active:bg-gray-50"
                         >
                             <Text className="text-2xl mr-3">📜</Text>
-                            <Text className="text-lg font-bold text-gray-800">
+                            <Text className="text-base font-bold text-gray-900">
                                 {language === 'ko' ? "규칙 추가하기" : "Add House Rule"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => handleSelectAction('goal')}
-                            className="p-5 flex-row items-center justify-center bg-white active:bg-gray-100"
+                            className="py-4 px-6 flex-row items-center active:bg-gray-50"
                         >
                             <Text className="text-2xl mr-3">🏆</Text>
-                            <Text className="text-lg font-bold text-gray-800">
+                            <Text className="text-base font-bold text-gray-900">
                                 {language === 'ko' ? "목표 추가하기" : "Add Goal"}
                             </Text>
                         </TouchableOpacity>
-                    </Animated.View>
-                    <TouchableOpacity
-                        onPress={() => setSelectionModalVisible(false)}
-                        className="bg-white rounded-xl p-4 mt-3 items-center shadow-lg"
-                    >
-                        <Text className="text-lg font-bold text-gray-900">{tCommon.cancel}</Text>
-                    </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
             </Modal>
 
-            {/* --- ADD RULE MODAL --- */}
-            <Modal visible={ruleModalVisible} animationType="fade" transparent>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* 규칙 추가 모달 - Supanova 바텀시트 */}
+            <Modal visible={ruleModalVisible} animationType="slide" transparent>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => { setRuleModalVisible(false); resetRuleForm(); setRuleStep(1); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>
@@ -472,11 +470,15 @@ export default function RulesScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* --- ADD GOAL MODAL --- */}
-            <Modal visible={goalModalVisible} animationType="fade" transparent>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* 목표 추가 모달 - Supanova 바텀시트 */}
+            <Modal visible={goalModalVisible} animationType="slide" transparent>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => { setGoalModalVisible(false); setGoalStep(1); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>

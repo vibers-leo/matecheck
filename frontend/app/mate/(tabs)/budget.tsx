@@ -136,149 +136,146 @@ export default function BudgetScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Header (Modern Simple Style) */}
-            <View className={cn("pt-16 pb-6 px-6 z-20 mb-2 flex-row justify-between items-center", isTossMode ? "bg-white" : "bg-white shadow-sm rounded-b-[40px]")}>
+            {/* 헤더 - Supanova 스타일 */}
+            <View className="pt-14 pb-5 px-5 bg-white z-20 flex-row justify-between items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12 }}>
                 <View className="flex-row items-center gap-2">
-                    <Text className={cn("text-2xl font-black", isTossMode ? "text-gray-900 text-3xl" : "text-gray-900")}>{isTossMode ? "송금/정산" : t.title}</Text>
+                    <Text className="text-xl font-bold tracking-tight text-gray-900">{isTossMode ? "송금/정산" : t.title}</Text>
                     {!isTossMode && (
-                        <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-1">
-                            <Ionicons name="help-circle-outline" size={24} color="#9CA3AF" />
+                        <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-0.5">
+                            <Ionicons name="help-circle-outline" size={20} color="#D1D5DB" />
                         </TouchableOpacity>
                     )}
                 </View>
-                <TouchableOpacity
-                    onPress={() => setTransModalVisible(true)}
-                    className={cn("px-5 py-2.5 rounded-full shadow-lg shadow-orange-200 flex-row items-center gap-1", themeBg)}
-                >
-                    <Ionicons name="add" size={18} color="white" />
-                    <Text className="text-white font-bold text-sm">{language === 'ko' ? '기록' : 'Add'}</Text>
-                </TouchableOpacity>
             </View>
 
-            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 120, paddingTop: 24 }} showsVerticalScrollIndicator={false}>
-                <View className="gap-8">
+            <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>
+                <View className="gap-4">
 
-                    {/* 1. Summary Card (Highlighted) */}
+                    {/* 1. 요약 카드 - Supanova 스타일 */}
                     <Animated.View
                         entering={SlideInUp.delay(100)}
-                        className={cn("p-8 rounded-[40px] shadow-xl", isTossMode ? "bg-white border border-gray-200 shadow-gray-100" : (themeBg + " border border-white/20"))}
+                        className="bg-white rounded-3xl p-5"
+                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                     >
-                        {/* Header Row */}
-                        <View className="flex-row justify-between items-center mb-10">
-                            <Text className={cn("text-lg font-bold", isTossMode ? "text-gray-600" : "text-gray-900 opacity-80")}>{t.goal_title}</Text>
-                            <TouchableOpacity onPress={() => setGoalModalVisible(true)} className={cn("px-4 py-2 rounded-full", isTossMode ? "bg-gray-100" : "bg-white shadow-sm")}>
-                                <Text className={cn("text-xs font-bold", isTossMode ? "text-gray-600" : "text-gray-900")}>{language === 'ko' ? '목표 수정' : 'Edit Goal'}</Text>
+                        {/* eyebrow 라벨 + 수정 버튼 */}
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{language === 'ko' ? "남은 예산" : "Remaining Budget"}</Text>
+                            <TouchableOpacity onPress={() => setGoalModalVisible(true)} className="bg-gray-100 px-3 py-1.5 rounded-full">
+                                <Text className="text-xs font-bold text-gray-500">{language === 'ko' ? '목표 수정' : 'Edit'}</Text>
                             </TouchableOpacity>
                         </View>
 
-                        {/* Center Hero Section */}
-                        <View className="items-center mb-12">
-                            <Text className={cn("text-sm font-bold mb-2 uppercase tracking-widest", isTossMode ? "text-gray-400" : "text-gray-900/60")}>{language === 'ko' ? "남은 예산" : "Remaining Budget"}</Text>
-                            <Text className={cn("text-5xl font-black tracking-tighter", isTossMode ? "text-gray-900" : "text-gray-900")} style={{ includeFontPadding: false }}>
+                        {/* 큰 숫자 - 잔액 */}
+                        <View className="items-center mb-6">
+                            <Text className="text-4xl font-bold tracking-tight text-gray-900" style={{ includeFontPadding: false }}>
                                 {remaining.toLocaleString()}
-                                <Text className="text-3xl font-bold">원</Text>
+                                <Text className="text-2xl">원</Text>
                             </Text>
                         </View>
 
-                        {/* Progress Bar */}
-                        <View className="mb-6">
-                            <View className="flex-row justify-between mb-2 px-1">
-                                <Text className={cn("text-xs font-bold", isTossMode ? "text-gray-400" : "text-gray-900/60")}>0%</Text>
-                                <Text className={cn("text-xs font-bold", isTossMode ? "text-gray-400" : "text-gray-900/60")}>100%</Text>
+                        {/* 프로그레스 바 */}
+                        <View className="mb-5">
+                            <View className="w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
+                                <Animated.View style={{ width: `${progress}%` }} className={cn("h-full rounded-full", themeBg)} />
                             </View>
-                            <View className={cn("w-full h-5 rounded-full overflow-hidden", isTossMode ? "bg-gray-100" : "bg-white/40 backdrop-blur-sm border border-white/30")}>
-                                <Animated.View style={{ width: `${progress}%` }} className={cn("h-full rounded-full shadow-sm", isTossMode ? "bg-toss-blue" : "bg-gray-900")} />
+                            <View className="flex-row justify-between mt-1.5 px-0.5">
+                                <Text className="text-[10px] font-bold text-gray-300">{progress}%</Text>
+                                <Text className="text-[10px] font-bold text-gray-300">100%</Text>
                             </View>
                         </View>
 
-                        {/* Stats Row */}
+                        {/* 수입/지출 요약 */}
                         <View className="flex-row gap-3">
-                            <View className={cn("flex-1 p-5 rounded-3xl items-center", isTossMode ? "bg-gray-50" : "bg-white shadow-sm")}>
-                                <Text className={cn("text-[10px] uppercase font-bold mb-1", isTossMode ? "text-gray-400" : "text-gray-400")}>{language === 'ko' ? "현재 지출" : "Spent"}</Text>
-                                <Text className={cn("font-bold text-lg", isTossMode ? "text-gray-900" : "text-gray-900")}>{totalSpent.toLocaleString()}</Text>
+                            <View className="flex-1 bg-gray-50 p-4 rounded-2xl items-center">
+                                <Text className="text-[10px] uppercase font-bold text-gray-400 mb-1">{language === 'ko' ? "지출" : "Spent"}</Text>
+                                <Text className="font-bold text-base text-red-500">{totalSpent.toLocaleString()}</Text>
                             </View>
-                            <View className={cn("flex-1 p-5 rounded-3xl items-center", isTossMode ? "bg-gray-50" : "bg-white/50 border border-white/50")}>
-                                <Text className={cn("text-[10px] uppercase font-bold mb-1", isTossMode ? "text-gray-400" : "text-gray-800/60")}>{language === 'ko' ? "목표 예산" : "Target"}</Text>
-                                <Text className={cn("font-bold text-lg", isTossMode ? "text-gray-900" : "text-gray-900/80")}>{budgetGoal.toLocaleString()}</Text>
+                            <View className="flex-1 bg-gray-50 p-4 rounded-2xl items-center">
+                                <Text className="text-[10px] uppercase font-bold text-gray-400 mb-1">{language === 'ko' ? "예산" : "Budget"}</Text>
+                                <Text className="font-bold text-base text-gray-900">{budgetGoal.toLocaleString()}</Text>
                             </View>
                         </View>
                     </Animated.View>
 
-                    {/* Quick Transfer Links */}
+                    {/* 간편 송금 - Supanova 카드 */}
                     <View>
-                        <Text className="text-xl font-black text-gray-900 mb-4 px-2">간편 송금 & 기록 🔗</Text>
+                        <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">간편 송금</Text>
                         <View className="flex-row gap-3">
                             <TouchableOpacity
                                 onPress={() => handleStartSmartTransfer('toss')}
-                                className="flex-1 bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm flex-row items-center justify-center gap-3 active:scale-95 transition-all"
+                                className="flex-1 bg-white p-5 rounded-3xl flex-row items-center justify-center gap-3 active:bg-gray-50"
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                             >
-                                <View className="w-10 h-10 bg-[#0064FF] rounded-2xl items-center justify-center shadow-lg shadow-blue-100">
-                                    <Text className="text-white font-black text-xs">TOSS</Text>
+                                <View className="w-10 h-10 bg-[#0064FF] rounded-2xl items-center justify-center">
+                                    <Text className="text-white font-bold text-xs">TOSS</Text>
                                 </View>
-                                <Text className="font-black text-gray-800">토스 기록</Text>
+                                <Text className="font-bold text-gray-900">토스 기록</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => handleStartSmartTransfer('kakao')}
-                                className="flex-1 bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm flex-row items-center justify-center gap-3 active:scale-95 transition-all"
+                                className="flex-1 bg-white p-5 rounded-3xl flex-row items-center justify-center gap-3 active:bg-gray-50"
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                             >
-                                <View className="w-10 h-10 bg-[#FFEB00] rounded-2xl items-center justify-center shadow-lg shadow-yellow-100">
+                                <View className="w-10 h-10 bg-[#FFEB00] rounded-2xl items-center justify-center">
                                     <View className="bg-[#3C1E1E] w-5 h-4 rounded-sm items-center justify-center">
                                         <View className="bg-[#FFEB00] w-2 h-2 rounded-full" />
                                     </View>
                                 </View>
-                                <Text className="font-black text-gray-800">카카오 기록</Text>
+                                <Text className="font-bold text-gray-900">카카오 기록</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* 2. Fixed Expenses Section */}
+                    {/* 2. 고정 지출 - Supanova 카드 */}
                     <View>
-                        <View className="flex-row justify-between items-center mb-4 px-2">
-                            <Text className="text-xl font-black text-gray-900">고정 지출 🏠</Text>
-                            <TouchableOpacity onPress={() => setFixedModalVisible(true)} className="flex-row items-center gap-1">
-                                <Text className={cn("font-bold text-sm", themeText)}>+ 추가</Text>
+                        <View className="flex-row justify-between items-center mb-3">
+                            <Text className="text-xl font-bold tracking-tight text-gray-900">고정 지출</Text>
+                            <TouchableOpacity onPress={() => setFixedModalVisible(true)} className="bg-gray-100 px-3 py-1.5 rounded-full active:bg-gray-200">
+                                <Text className="text-xs font-bold text-gray-500">+ 추가</Text>
                             </TouchableOpacity>
                         </View>
-                        <View className="bg-white p-2 rounded-[32px] border border-gray-100 shadow-sm">
+                        <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
                             {fixedExpenses.length === 0 ? (
                                 <View className="py-10 items-center">
-                                    <Text className="text-gray-400 font-medium">등록된 고정 지출이 없어요</Text>
+                                    <Ionicons name="home-outline" size={40} color="#D1D5DB" />
+                                    <Text className="text-gray-300 font-bold text-sm mt-3">등록된 고정 지출이 없어요</Text>
                                 </View>
                             ) : (
                                 <View>
                                     {fixedExpenses.map((f: FixedExpense, i: number) => (
-                                        <View key={f.id} className={cn("flex-row justify-between items-center p-5", i !== fixedExpenses.length - 1 && "border-b border-gray-50")}>
-                                            <View className="flex-row items-center gap-4 flex-1">
-                                                <View className="w-12 h-12 rounded-2xl bg-gray-50 items-center justify-center border border-gray-200">
-                                                    <Text className="text-gray-900 font-black text-sm">{f.day}</Text>
-                                                    <Text className="text-gray-400 text-[9px] font-bold">일</Text>
+                                        <View key={f.id} className={cn("flex-row justify-between items-center py-4 px-5", i !== fixedExpenses.length - 1 && "border-b border-gray-100")}>
+                                            <View className="flex-row items-center gap-3 flex-1">
+                                                <View className="w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+                                                    <Text className="text-gray-900 font-bold text-sm">{f.day}</Text>
+                                                    <Text className="text-gray-400 text-[8px] font-bold">일</Text>
                                                 </View>
                                                 <View className="flex-1">
-                                                    <Text className="font-bold text-gray-900 text-lg mb-0.5">{f.title}</Text>
-                                                    <Text className="text-gray-400 text-xs font-medium">매월 자동 계산</Text>
+                                                    <Text className="font-bold text-gray-900 text-base">{f.title}</Text>
+                                                    <Text className="text-gray-400 text-xs">매월 자동 계산</Text>
                                                 </View>
                                             </View>
-                                            <View className="items-end gap-1">
-                                                <Text className="font-black text-gray-900 text-lg">{f.amount.toLocaleString()}원</Text>
-                                                <TouchableOpacity onPress={() => deleteFixedExpense(f.id)} className="opacity-40">
-                                                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                                            <View className="items-end flex-row gap-2">
+                                                <Text className="font-bold text-gray-900 text-base">{f.amount.toLocaleString()}원</Text>
+                                                <TouchableOpacity onPress={() => deleteFixedExpense(f.id)} className="p-1">
+                                                    <Ionicons name="close-circle" size={16} color="#D1D5DB" />
                                                 </TouchableOpacity>
                                             </View>
                                         </View>
                                     ))}
-                                    <View className="m-2 p-5 bg-gray-50 rounded-[24px] flex-row justify-between items-center border border-gray-100">
-                                        <Text className="text-gray-500 text-sm font-bold">총 고정 지출</Text>
-                                        <Text className="text-gray-900 font-black text-xl">{fixedTotal.toLocaleString()}원</Text>
+                                    {/* 합계 */}
+                                    <View className="py-4 px-5 bg-gray-50 rounded-b-3xl flex-row justify-between items-center">
+                                        <Text className="text-gray-500 text-sm font-bold">합계</Text>
+                                        <Text className="text-gray-900 font-bold text-lg">{fixedTotal.toLocaleString()}원</Text>
                                     </View>
                                 </View>
                             )}
                         </View>
                     </View>
 
-                    {/* 3. Spend Analysis Chart */}
+                    {/* 3. 지출 분석 - Supanova 카드 */}
                     <View>
-                        <Text className="text-xl font-black text-gray-900 mb-4 px-2">지출 분석 📊</Text>
-                        <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm items-center">
+                        <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">지출 분석</Text>
+                        <View className="bg-white p-5 rounded-3xl items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
                             <PieChart
                                 data={chartData}
                                 width={width - 80}
@@ -293,43 +290,37 @@ export default function BudgetScreen() {
                         </View>
                     </View>
 
-                    {/* 4. Recent Transactions List */}
+                    {/* 4. 최근 지출 - Supanova 리스트 카드 */}
                     <View>
-                        <Text className="text-xl font-black text-gray-900 mb-4 px-2">최근 지출 💸</Text>
-                        <View className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-2">
+                        <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">최근 지출</Text>
+                        <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
                             {transactions.length === 0 ? (
-                                <View className="py-12 items-center">
-                                    <View className="w-16 h-16 bg-gray-50 rounded-full items-center justify-center mb-4">
-                                        <Ionicons name="receipt-outline" size={32} color="#D1D5DB" />
-                                    </View>
-                                    <Text className="text-gray-400 font-medium">아직 지출 내역이 없습니다.</Text>
+                                /* 빈 상태 */
+                                <View className="py-10 items-center">
+                                    <Ionicons name="receipt-outline" size={40} color="#D1D5DB" />
+                                    <Text className="text-gray-300 font-bold text-sm mt-3">아직 지출 내역이 없습니다.</Text>
                                 </View>
                             ) : (
                                 transactions.slice(0, 10).map((t: BudgetTransaction, i: number) => (
                                     <Animated.View
                                         entering={FadeInDown.delay(i * 50)}
                                         key={t.id}
-                                        className={cn("flex-row justify-between items-center p-5", i !== transactions.length - 1 && "border-b border-gray-50")}
+                                        className={cn("flex-row justify-between items-center py-4 px-5", i !== Math.min(transactions.length, 10) - 1 && "border-b border-gray-100")}
                                     >
-                                        <View className="flex-row items-center gap-4">
+                                        <View className="flex-row items-center gap-3">
                                             <Avatar
                                                 source={(AVATARS[Number(t.payerId)] || AVATARS[0]).image}
                                                 size="sm"
                                                 className="bg-gray-50"
                                             />
                                             <View>
-                                                <Text className="font-bold text-gray-800 text-base mb-0.5">{t.title}</Text>
-                                                <Text className="text-gray-400 text-[10px] font-bold tracking-widest uppercase">
-                                                    {t.date} • {(AVATARS[Number(t.payerId)] || AVATARS[0]).label}
+                                                <Text className="font-bold text-gray-900 text-base">{t.title}</Text>
+                                                <Text className="text-gray-400 text-xs mt-0.5">
+                                                    {t.date} · {(AVATARS[Number(t.payerId)] || AVATARS[0]).label}
                                                 </Text>
                                             </View>
                                         </View>
-                                        <View className="items-end">
-                                            <Text className="font-black text-gray-900 text-lg">-{t.amount.toLocaleString()}</Text>
-                                            <View className="bg-gray-100 px-2 py-1 rounded mt-1">
-                                                <Text className="text-gray-500 text-[10px] font-bold">{t.category}</Text>
-                                            </View>
-                                        </View>
+                                        <Text className="font-bold text-red-500 text-base">-{t.amount.toLocaleString()}</Text>
                                     </Animated.View>
                                 ))
                             )}
@@ -338,13 +329,26 @@ export default function BudgetScreen() {
                 </View>
             </ScrollView>
 
-            {/* --- MODALS --- */}
+            {/* FAB 기록 버튼 - Supanova 스타일 */}
+            <TouchableOpacity
+                onPress={() => setTransModalVisible(true)}
+                className={cn("absolute bottom-8 right-5 w-14 h-14 rounded-full items-center justify-center z-30", themeBg)}
+                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+            >
+                <Ionicons name="add" size={28} color="white" />
+            </TouchableOpacity>
 
-            {/* Smart Transfer & Log Modal */}
-            <Modal animationType="fade" transparent visible={smartModalVisible} onRequestClose={() => setSmartModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* --- 모달 --- */}
+
+            {/* 간편 송금 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent visible={smartModalVisible} onRequestClose={() => setSmartModalVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             {smartStep < 4 && (
                                 <TouchableOpacity onPress={() => setSmartModalVisible(false)} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                     <Ionicons name="close" size={24} color="#94A3B8" />
@@ -463,11 +467,15 @@ export default function BudgetScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* Set Budget Goal Modal */}
-            <Modal animationType="fade" transparent visible={goalModalVisible} onRequestClose={() => setGoalModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* 예산 목표 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent visible={goalModalVisible} onRequestClose={() => setGoalModalVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => setGoalModalVisible(false)} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>
@@ -500,11 +508,15 @@ export default function BudgetScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* Add Transaction Modal */}
-            <Modal animationType="fade" transparent visible={transModalVisible} onRequestClose={() => setTransModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* 지출 기록 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent visible={transModalVisible} onRequestClose={() => setTransModalVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => { setTransModalVisible(false); setTransStep(1); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>
@@ -568,11 +580,15 @@ export default function BudgetScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* Add Fixed Expense Modal */}
-            <Modal animationType="fade" transparent visible={fixedModalVisible} onRequestClose={() => setFixedModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* 고정 지출 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent visible={fixedModalVisible} onRequestClose={() => setFixedModalVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => { setFixedModalVisible(false); setFixedStep(1); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>

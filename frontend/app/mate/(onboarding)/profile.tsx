@@ -5,10 +5,27 @@ import { useUserStore } from '../../../store/userStore';
 import { API_URL } from '../../../constants/Config';
 import { cn } from '../../../lib/utils';
 import { AVATARS } from '../../../constants/data';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import Avatar from '../../../components/Avatar';
 import { Language, translations } from '../../../constants/I18n';
+
+/* 온보딩 진행 표시기 컴포넌트 */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+    return (
+        <View className="flex-row gap-2 mb-6">
+            {Array.from({ length: total }).map((_, i) => (
+                <View
+                    key={i}
+                    className={cn(
+                        "h-1 rounded-full flex-1",
+                        i < current ? "bg-primary" : "bg-gray-100"
+                    )}
+                />
+            ))}
+        </View>
+    );
+}
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -43,23 +60,29 @@ export default function ProfileScreen() {
                 setProfile(nickname, selectedAvatarId, String(data.id));
                 router.push('/(onboarding)/nest_choice');
             } else {
-                Alert.alert("Error", data.error || "Something went wrong.");
+                Alert.alert("오류", data.error || "문제가 발생했습니다.");
             }
         } catch (error) {
             console.error(error);
-            Alert.alert("Error", "Server connection failed.");
+            Alert.alert("오류", "서버 연결에 실패했습니다.");
         }
     };
 
     return (
-        <View className="flex-1 bg-white pt-12 px-6">
+        <View className="flex-1 bg-white pt-12 px-5">
             <Animated.View entering={FadeInDown.delay(100).springify()}>
-                <Text className="text-gray-400 font-medium mb-1 text-sm">{t.step1}</Text>
-                <Text className="text-2xl font-bold text-gray-800 mb-8 leading-9">
+                {/* 진행 표시기 */}
+                <StepIndicator current={1} total={3} />
+
+                {/* Eyebrow + 제목 */}
+                <Text className="eyebrow text-primary mb-2">{t.step1}</Text>
+                <Text className="text-heading-2 text-gray-900 mb-2 leading-snug tracking-tight">
                     {t.profile_title}
                 </Text>
+                <Text className="caption mb-8">{t.avatar_hint}</Text>
 
-                <View className="items-center mb-10">
+                {/* 아바타 카드 */}
+                <View className="card-mobile items-center mb-6">
                     <TouchableOpacity
                         onPress={() => setSelectedAvatarId((selectedAvatarId + 1) % AVATARS.length)}
                         className="relative"
@@ -70,34 +93,38 @@ export default function ProfileScreen() {
                             borderColor="#E5E7EB"
                             borderWidth={2}
                         />
-                        <View className="absolute bottom-0 right-0 bg-white p-2 rounded-full border border-gray-100 shadow-md">
-                            <Ionicons name="refresh" size={16} color="#666" />
+                        <View className="absolute bottom-0 right-0 bg-white p-2 rounded-full border border-gray-100 shadow-card">
+                            <Ionicons name="refresh" size={16} color="#9CA3AF" />
                         </View>
                     </TouchableOpacity>
-                    <Text className="text-gray-400 text-xs mt-3">{t.avatar_hint}</Text>
+                    <Text className="caption mt-3">탭하여 변경</Text>
                 </View>
 
-                <Text className="text-base font-semibold text-gray-700 mb-3 ml-1">{t.nickname_label}</Text>
+                {/* 닉네임 입력 */}
+                <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">{t.nickname_label}</Text>
                 <TextInput
                     value={nickname}
                     onChangeText={setLocalNickname}
                     placeholder={t.nickname_placeholder}
-                    placeholderTextColor="#E2E8F0"
-                    className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl p-5 text-gray-800 text-lg focus:border-orange-200"
+                    placeholderTextColor="#D1D5DB"
+                    className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                     autoFocus
                 />
             </Animated.View>
 
-            <View className="flex-1 justify-end pb-12">
+            {/* 하단 고정 CTA */}
+            <View className="flex-1 justify-end pb-10">
                 <TouchableOpacity
                     onPress={handleNext}
                     disabled={!nickname.trim()}
                     className={cn(
-                        "w-full py-5 rounded-2xl items-center",
-                        nickname.trim() ? "bg-orange-500 shadow-lg shadow-orange-100" : "bg-gray-100"
+                        "btn-primary w-full",
+                        nickname.trim() ? "bg-primary" : "bg-gray-100"
                     )}
                 >
-                    <Text className={cn("font-bold text-lg", nickname.trim() ? "text-white" : "text-gray-400")}>{t.next_button}</Text>
+                    <Text className={cn("font-semibold text-base", nickname.trim() ? "text-white" : "text-gray-400")}>
+                        {t.next_button}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </View>

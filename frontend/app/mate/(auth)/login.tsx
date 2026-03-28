@@ -1,9 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter, Link } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
 import { API_URL } from '../../../constants/Config';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
@@ -79,37 +79,41 @@ export default function LoginScreen() {
             <StatusBar style="dark" />
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24 }}
                 keyboardShouldPersistTaps="handled"
             >
-                <View className="mb-12">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mb-8 w-10 h-10 items-center justify-center rounded-full bg-gray-50"
-                    >
-                        <Ionicons name="arrow-back" size={24} color="#4B5563" />
-                    </TouchableOpacity>
+                {/* 뒤로가기 */}
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    className="mb-6 w-10 h-10 items-center justify-center rounded-full bg-gray-50"
+                >
+                    <Ionicons name="arrow-back" size={20} color="#6B7280" />
+                </TouchableOpacity>
 
-                    <Animated.View entering={FadeInDown.duration(800).springify()}>
-                        <Text className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">반가워요! 👋</Text>
-                        <Text className="text-base text-gray-500 leading-6">
-                            가족과의 소중한 일상,{'\n'}메이트체크에서 다시 이어가세요.
-                        </Text>
-                    </Animated.View>
-                </View>
+                {/* 로고 + Eyebrow 영역 */}
+                <Animated.View entering={FadeInDown.duration(600).springify()} className="mb-10">
+                    <Text className="eyebrow text-primary mb-3">MATECHECK</Text>
+                    <Text className="text-heading-1 text-gray-900 leading-snug tracking-tight">
+                        다시 만나서{'\n'}반가워요
+                    </Text>
+                    <Text className="text-body text-gray-400 mt-2">
+                        소중한 일상을 이어가세요.
+                    </Text>
+                </Animated.View>
 
-                <Animated.View entering={FadeInDown.delay(200).duration(800).springify()} className="w-full">
-                    {/* Error Message */}
+                {/* 폼 영역 */}
+                <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} className="w-full gap-4">
+                    {/* 에러 메시지 */}
                     {errorMessage ? (
-                        <View className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex-row items-center">
-                            <Ionicons name="alert-circle" size={20} color="#EF4444" />
-                            <Text className="text-red-600 ml-2 flex-1">{errorMessage}</Text>
+                        <View className="bg-red-50 rounded-2xl p-4 flex-row items-center">
+                            <Ionicons name="alert-circle" size={18} color="#EF4444" />
+                            <Text className="text-red-500 ml-2 flex-1 text-sm">{errorMessage}</Text>
                         </View>
                     ) : null}
 
-                    {/* Email Input */}
-                    <View className="mb-5">
-                        <Text className="text-sm font-bold text-gray-700 mb-2 ml-1">이메일 주소</Text>
+                    {/* 이메일 입력 */}
+                    <View>
+                        <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">이메일</Text>
                         <TextInput
                             value={email}
                             onChangeText={(text) => {
@@ -117,16 +121,17 @@ export default function LoginScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="example@matecheck.com"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
+                            placeholderTextColor="#D1D5DB"
+                            className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             editable={!isLoading}
                         />
                     </View>
 
-                    {/* Password Input */}
-                    <View className="mb-10">
-                        <Text className="text-sm font-bold text-gray-700 mb-2 ml-1">비밀번호</Text>
+                    {/* 비밀번호 입력 */}
+                    <View>
+                        <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">비밀번호</Text>
                         <TextInput
                             value={password}
                             onChangeText={(text) => {
@@ -134,32 +139,34 @@ export default function LoginScreen() {
                                 setErrorMessage('');
                             }}
                             placeholder="비밀번호를 입력해주세요"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 text-base"
+                            placeholderTextColor="#D1D5DB"
+                            className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                             secureTextEntry
                             editable={!isLoading}
                             onSubmitEditing={handleLogin}
                             returnKeyType="go"
                         />
                     </View>
+                </Animated.View>
 
-                    {/* Login Button */}
+                {/* 로그인 버튼 + 하단 링크 */}
+                <Animated.View entering={FadeInUp.delay(400).duration(600).springify()} className="mt-10">
                     <TouchableOpacity
                         onPress={handleLogin}
                         disabled={isLoading}
-                        className={`w-full py-5 rounded-full items-center shadow-premium mb-8 ${isLoading ? 'bg-orange-300' : 'bg-orange-500 active:bg-orange-600'
-                            }`}
+                        className={`btn-primary w-full ${isLoading ? 'bg-primary-light' : 'bg-primary active:opacity-90'}`}
                     >
-                        <Text className="text-white font-bold text-lg">
-                            {isLoading ? '로그인 중...' : '로그인하기'}
+                        <Text className="text-white font-semibold text-base">
+                            {isLoading ? '로그인 중...' : '로그인'}
                         </Text>
                     </TouchableOpacity>
 
-                    {/* Sign Up Link */}
-                    <View className="flex-row justify-center items-center gap-2">
-                        <Text className="text-gray-400 text-base">계정이 없으신가요?</Text>
+                    {/* 회원가입 링크 */}
+                    <View className="flex-row justify-center items-center gap-1 mt-6">
+                        <Text className="text-gray-400 text-sm">계정이 없으신가요?</Text>
                         <Link href="/(auth)/signup" asChild>
                             <TouchableOpacity>
-                                <Text className="text-orange-600 font-bold text-base">회원가입</Text>
+                                <Text className="text-primary font-semibold text-sm">회원가입</Text>
                             </TouchableOpacity>
                         </Link>
                     </View>

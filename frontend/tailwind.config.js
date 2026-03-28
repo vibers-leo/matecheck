@@ -5,16 +5,41 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      /* ── Supanova 스페이싱 ── */
+      spacing: {
+        'gutter': '16px',
+        'section': '24px',
+      },
+
+      /* ── Supanova 모서리 둥글기 ── */
       borderRadius: {
+        'card': '24px',
+        'button': '9999px',
+        'modal': '32px',
         'premium': '2rem',
       },
-      boxShadow: {
-        'premium': '0 20px 60px -15px rgba(255, 127, 80, 0.08)',
-        'card': '0 4px 24px -4px rgba(0, 0, 0, 0.06)',
+
+      /* ── Supanova 타이포그래피 ── */
+      fontSize: {
+        'heading-1': ['28px', { lineHeight: '36px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'heading-2': ['22px', { lineHeight: '30px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'heading-3': ['18px', { lineHeight: '26px', letterSpacing: '-0.01em', fontWeight: '700' }],
+        'body': ['15px', { lineHeight: '22px' }],
+        'caption': ['12px', { lineHeight: '16px' }],
       },
+
+      /* ── Supanova 그림자 ── */
+      boxShadow: {
+        'card': '0 2px 12px -4px rgba(0, 0, 0, 0.06)',
+        'premium': '0 20px 60px -15px rgba(255, 127, 80, 0.08)',
+      },
+
+      /* ── Supanova 애니메이션 ── */
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
+
+      /* ── 색상 시스템 ── */
       colors: {
         primary: {
           DEFAULT: '#FF7F50', // Coral

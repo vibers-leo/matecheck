@@ -175,220 +175,230 @@ export default function PlanScreen() {
         }
     };
 
+    {/* 투두 아이템 - Supanova 리스트 스타일 */}
     const TodoItem = ({ item, index }: { item: Todo, index: number }) => (
-        <Animated.View entering={FadeInUp.delay(index * 50)} layout={Layout.springify()} className={cn("flex-row items-center bg-white p-4 rounded-2xl mb-3 shadow-sm border", item.isCompleted ? "border-gray-100 opacity-60" : "border-gray-100")}>
-            <TouchableOpacity onPress={() => toggleTodo(item.id, '0')} className={cn("w-6 h-6 rounded-md border-2 mr-3 items-center justify-center", item.isCompleted ? `${themeBg} ${themeBorder}` : "border-gray-300 bg-white")}>
-                {item.isCompleted && <Ionicons name="checkmark" size={16} color="white" />}
+        <Animated.View entering={FadeInUp.delay(index * 50)} layout={Layout.springify()} className={cn("flex-row items-center py-4 px-5", item.isCompleted && "opacity-50")}>
+            <TouchableOpacity onPress={() => toggleTodo(item.id, '0')} className={cn("w-6 h-6 rounded-full border-2 mr-3 items-center justify-center", item.isCompleted ? `${themeBg} ${themeBorder}` : "border-gray-300 bg-white")}>
+                {item.isCompleted && <Ionicons name="checkmark" size={14} color="white" />}
             </TouchableOpacity>
             <View className="flex-1 mr-2">
-                <View className="flex-row items-center gap-1 mb-1">
-                    {item.repeat === 'daily' && <View className="bg-blue-100 px-1.5 py-0.5 rounded text-xs"><Text className="text-blue-600 text-[10px] font-bold">{tTodo.daily_badge}</Text></View>}
-                    <Text className={cn("text-lg font-medium", item.isCompleted ? "text-gray-400 line-through" : "text-gray-800")}>{item.title}</Text>
+                <View className="flex-row items-center gap-1.5">
+                    {item.repeat === 'daily' && <View className="bg-blue-50 px-1.5 py-0.5 rounded-full"><Text className="text-blue-500 text-[10px] font-bold">{tTodo.daily_badge}</Text></View>}
+                    <Text className={cn("text-base font-medium", item.isCompleted ? "text-gray-300 line-through" : "text-gray-900")}>{item.title}</Text>
                 </View>
-                {item.imageUrl && <Image source={{ uri: item.imageUrl }} className="w-16 h-16 rounded-lg mb-1" />}
+                {item.imageUrl && <Image source={{ uri: item.imageUrl }} className="w-14 h-14 rounded-xl mt-2" />}
             </View>
-            <View className="items-end justify-center">
-                <View className="flex-row pl-2">
-                    {item.assignees?.map((assignee, i) => (
-                        <Avatar
-                            key={assignee.id}
-                            source={(AVATARS[assignee.avatarId] || AVATARS[0]).image}
-                            size="sm"
-                            className="-ml-2"
-                            borderColor="#FFFFFF"
-                            borderWidth={2}
-                        />
-                    ))}
-                </View>
+            <View className="items-end justify-center flex-row">
+                {item.assignees?.map((assignee, i) => (
+                    <Avatar
+                        key={assignee.id}
+                        source={(AVATARS[assignee.avatarId] || AVATARS[0]).image}
+                        size="sm"
+                        className="-ml-1.5"
+                        borderColor="#FFFFFF"
+                        borderWidth={2}
+                    />
+                ))}
             </View>
-            <TouchableOpacity onPress={() => deleteTodo(item.id)} className="ml-2 pl-2 border-l border-gray-100">
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+            <TouchableOpacity onPress={() => deleteTodo(item.id)} className="ml-3 p-1">
+                <Ionicons name="trash-outline" size={16} color="#D1D5DB" />
             </TouchableOpacity>
         </Animated.View>
     );
 
     return (
-        <View className="flex-1 bg-white">
-            {/* Header */}
-            {/* Header (Modern Simple Style) */}
-            <View className="pt-12 pb-6 px-6 bg-white shadow-sm rounded-b-[40px] z-20 mb-6 flex-row justify-between items-center">
+        <View className="flex-1 bg-gray-50">
+            {/* 헤더 - Supanova 스타일 */}
+            <View className="pt-14 pb-5 px-5 bg-white z-20 flex-row justify-between items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12 }}>
                 <View className="flex-row items-center gap-2">
-                    <Text className="text-2xl font-black text-gray-900">
+                    <Text className="text-xl font-bold tracking-tight text-gray-900">
                         {tCalendar.title}
                     </Text>
-                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-1">
-                        <Ionicons name="help-circle-outline" size={24} color="#9CA3AF" />
+                    <TouchableOpacity onPress={() => setShowTutorial(true)} className="mt-0.5">
+                        <Ionicons name="help-circle-outline" size={20} color="#D1D5DB" />
                     </TouchableOpacity>
                 </View>
             </View>
 
-            {/* Single Page ScrollView */}
-            <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+            {/* 메인 스크롤 */}
+            <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
-                {/* Calendar Section */}
-                <View className="bg-white pb-6 rounded-b-3xl shadow-sm mb-6">
+                {/* 캘린더 카드 - Supanova 카드 스타일 */}
+                <View className="mx-5 mt-4 bg-white rounded-3xl p-5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
                     <Calendar
                         current={today}
                         dayComponent={renderDay}
                         key={JSON.stringify(events)}
-                        theme={{ arrowColor: activeColorHex, monthTextColor: '#1F2937', textMonthFontWeight: '800' }}
+                        theme={{ arrowColor: activeColorHex, monthTextColor: '#1F2937', textMonthFontWeight: '700' }}
                     />
                 </View>
 
-                {/* Selected Date Events */}
-                <View className="px-6 mb-8">
-                    {/* Date Header + Inline Add Button */}
-                    <View className="flex-row items-center justify-between mb-4">
-                        <Text className="text-lg font-bold text-gray-800 flex-row items-center">
-                            📅 {Number(selectedDate.split('-')[1])}월 {Number(selectedDate.split('-')[2])}일
+                {/* 선택 날짜 일정 목록 */}
+                <View className="px-5 mt-4">
+                    {/* 날짜 헤더 + 추가 버튼 */}
+                    <View className="flex-row items-center justify-between mb-3">
+                        <Text className="text-xl font-bold tracking-tight text-gray-900">
+                            {Number(selectedDate.split('-')[1])}월 {Number(selectedDate.split('-')[2])}일
                         </Text>
                         <TouchableOpacity
                             onPress={() => setCalModalVisible(true)}
-                            className="bg-white border border-gray-200 px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-gray-50"
+                            className="bg-gray-100 px-3 py-1.5 rounded-full flex-row items-center active:bg-gray-200"
                         >
-                            <Ionicons name="add" size={14} color="#374151" />
-                            <Text className="text-xs font-bold text-gray-700 ml-1">
-                                {language === 'ko' ? "이 날짜에 추가" : "Add to this date"}
+                            <Ionicons name="add" size={14} color="#6B7280" />
+                            <Text className="text-xs font-bold text-gray-500 ml-1">
+                                {language === 'ko' ? "추가" : "Add"}
                             </Text>
                         </TouchableOpacity>
                     </View>
 
                     {selectedEvents.length === 0 ? (
+                        /* 빈 상태 - Supanova 스타일 */
                         <TouchableOpacity
                             onPress={() => setCalModalVisible(true)}
-                            className="bg-gray-50 rounded-2xl p-8 items-center justify-center border-2 border-dashed border-gray-200 active:bg-gray-100"
+                            className="bg-white rounded-3xl p-10 items-center justify-center active:bg-gray-50"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                         >
-                            <View className="w-12 h-12 rounded-full bg-white items-center justify-center mb-3 shadow-sm">
-                                <Ionicons name="add" size={24} color="#9CA3AF" />
-                            </View>
-                            <Text className="text-gray-500 font-medium text-sm">
+                            <Ionicons name="calendar-outline" size={40} color="#D1D5DB" />
+                            <Text className="text-gray-300 font-bold text-sm mt-3">
                                 {language === 'ko' ? "예정된 일정이 없어요" : "No events scheduled"}
-                            </Text>
-                            <Text className="text-gray-400 text-xs mt-1">
-                                {language === 'ko' ? "터치해서 일정을 추가해보세요" : "Tap to add a new event"}
                             </Text>
                         </TouchableOpacity>
                     ) : (
-                        selectedEvents.map((evt: any, idx: number) => {
-                            const isVote = evt.type === 'vote';
-                            const voteCount = evt.votes[selectedDate]?.length || 0;
-                            const hasVoted = evt.votes[selectedDate]?.includes(String(avatarId));
-                            return (
-                                <Animated.View key={evt.id} entering={FadeInUp.delay(idx * 100)} className="bg-white p-4 rounded-2xl mb-3 shadow-sm border border-gray-100">
-                                    <View className="flex-row items-start gap-3">
-                                        <View className={cn("w-1 h-full rounded-full absolute left-0 top-0 bottom-0", themeBg)} />
-                                        <View className="flex-1 ml-3">
-                                            <View className="flex-row justify-between items-start">
-                                                <View>
-                                                    <Text className="text-gray-800 font-bold text-lg">{evt.title} {evt.time && <Text className={cn("text-base font-medium", themeText)}> {evt.time}</Text>}</Text>
-                                                </View>
-                                                <TouchableOpacity onPress={() => deleteEvent(evt.id)}><Ionicons name="trash-outline" size={20} color="#9CA3AF" /></TouchableOpacity>
+                        /* 일정 카드 - 컬러 도트 + 제목 + 시간 */
+                        <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                            {selectedEvents.map((evt: any, idx: number) => {
+                                const isVote = evt.type === 'vote';
+                                const voteCount = evt.votes[selectedDate]?.length || 0;
+                                const hasVoted = evt.votes[selectedDate]?.includes(String(avatarId));
+                                return (
+                                    <Animated.View key={evt.id} entering={FadeInUp.delay(idx * 80)} className={cn("py-4 px-5", idx !== selectedEvents.length - 1 && "border-b border-gray-100")}>
+                                        <View className="flex-row items-center">
+                                            {/* 컬러 도트 */}
+                                            <View className={cn("w-3 h-3 rounded-full mr-3", themeBg)} />
+                                            <View className="flex-1">
+                                                <Text className="text-gray-900 font-bold text-base">{evt.title}</Text>
+                                                {evt.time && <Text className="text-gray-400 text-sm mt-0.5">{evt.time}</Text>}
                                             </View>
-                                            {evt.imageUrl && <Image source={{ uri: evt.imageUrl }} className="w-full h-32 rounded-lg my-2 bg-gray-100" resizeMode="cover" />}
-                                            {isVote && (
-                                                <TouchableOpacity onPress={() => voteEvent(evt.id, selectedDate, String(avatarId))} className={cn("flex-row items-center px-4 py-2 rounded-xl mt-2 border", hasVoted ? `${themeBg} border-transparent` : "bg-gray-50 border-gray-200")}>
-                                                    <Text className={cn("text-sm font-bold mr-2", hasVoted ? "text-white" : "text-gray-500")}>{hasVoted ? "참가 완료" : "참가하기"}</Text>
-                                                    <View className={cn("px-2 py-0.5 rounded-full", hasVoted ? "bg-white/20" : "bg-white border border-gray-200")}><Text className={cn("text-xs font-bold", hasVoted ? "text-white" : "text-gray-500")}>{voteCount}명</Text></View>
-                                                </TouchableOpacity>
-                                            )}
+                                            <TouchableOpacity onPress={() => deleteEvent(evt.id)} className="p-1 ml-2">
+                                                <Ionicons name="trash-outline" size={18} color="#D1D5DB" />
+                                            </TouchableOpacity>
                                         </View>
-                                    </View>
-                                </Animated.View>
-                            );
-                        })
+                                        {evt.imageUrl && <Image source={{ uri: evt.imageUrl }} className="w-full h-32 rounded-2xl mt-3 bg-gray-100" resizeMode="cover" />}
+                                        {isVote && (
+                                            <TouchableOpacity onPress={() => voteEvent(evt.id, selectedDate, String(avatarId))} className={cn("flex-row items-center px-4 py-2.5 rounded-xl mt-3", hasVoted ? themeBg : "bg-gray-50")}>
+                                                <Text className={cn("text-sm font-bold mr-2", hasVoted ? "text-white" : "text-gray-500")}>{hasVoted ? "참가 완료" : "참가하기"}</Text>
+                                                <View className={cn("px-2 py-0.5 rounded-full", hasVoted ? "bg-white/20" : "bg-white")}><Text className={cn("text-xs font-bold", hasVoted ? "text-white" : "text-gray-500")}>{voteCount}명</Text></View>
+                                            </TouchableOpacity>
+                                        )}
+                                    </Animated.View>
+                                );
+                            })}
+                        </View>
                     )}
                 </View>
 
-                {/* Todos Section */}
-                <View className="px-6">
-                    <View className="flex-row items-center mb-4">
-                        <Text className="text-lg font-bold text-gray-800">✅ {language === 'ko' ? "할 일" : "Todo"}</Text>
-                    </View>
+                {/* 할 일 섹션 - Supanova 카드 */}
+                <View className="px-5 mt-4">
+                    <Text className="text-xl font-bold tracking-tight text-gray-900 mb-3">
+                        {language === 'ko' ? "할 일" : "Todo"}
+                    </Text>
 
                     {todos.length === 0 ? (
+                        /* 빈 상태 */
                         <TouchableOpacity
                             onPress={() => setTodoModalVisible(true)}
-                            className="bg-gray-50 rounded-2xl p-8 items-center justify-center border-2 border-dashed border-gray-200 active:bg-gray-100"
+                            className="bg-white rounded-3xl p-10 items-center justify-center active:bg-gray-50"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
                         >
-                            <View className="w-12 h-12 rounded-full bg-white items-center justify-center mb-3 shadow-sm">
-                                <Ionicons name="add" size={24} color="#9CA3AF" />
-                            </View>
-                            <Text className="text-gray-500 text-sm font-medium">{tTodo.empty_list_title}</Text>
-                            <Text className="text-gray-400 text-xs mt-1">
-                                {language === 'ko' ? "터치해서 할 일을 추가해보세요" : "Tap to add a new task"}
-                            </Text>
+                            <Ionicons name="checkbox-outline" size={40} color="#D1D5DB" />
+                            <Text className="text-gray-300 font-bold text-sm mt-3">{tTodo.empty_list_title}</Text>
                         </TouchableOpacity>
                     ) : (
                         <>
-                            <Text className="text-sm font-bold text-gray-500 mb-2 ml-1">{tTodo.today}</Text>
-                            {dailyMissions.length > 0 ? dailyMissions.map((item: any, index: number) => <TodoItem key={item.id} item={item} index={index} />) : <Text className="text-gray-400 ml-1 mb-6 text-xs">{tTodo.empty_today}</Text>}
+                            {/* 오늘 할 일 카드 */}
+                            <View className="bg-white rounded-3xl mb-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                                <View className="px-5 pt-4 pb-2">
+                                    <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{tTodo.today}</Text>
+                                </View>
+                                {dailyMissions.length > 0 ? dailyMissions.map((item: any, index: number) => <TodoItem key={item.id} item={item} index={index} />) : <View className="px-5 pb-4"><Text className="text-gray-300 text-sm">{tTodo.empty_today}</Text></View>}
+                            </View>
 
-                            <View className="h-4" />
-
-                            <Text className="text-sm font-bold text-gray-500 mb-2 ml-1">{tTodo.weekly}</Text>
-                            {weeklyMissions.length > 0 ? weeklyMissions.map((item: any, index: number) => <TodoItem key={item.id} item={item} index={index} />) : <Text className="text-gray-400 ml-1 text-xs">{tTodo.empty_weekly}</Text>}
+                            {/* 주간 할 일 카드 */}
+                            <View className="bg-white rounded-3xl" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                                <View className="px-5 pt-4 pb-2">
+                                    <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">{tTodo.weekly}</Text>
+                                </View>
+                                {weeklyMissions.length > 0 ? weeklyMissions.map((item: any, index: number) => <TodoItem key={item.id} item={item} index={index} />) : <View className="px-5 pb-4"><Text className="text-gray-300 text-sm">{tTodo.empty_weekly}</Text></View>}
+                            </View>
                         </>
                     )}
                 </View>
             </ScrollView>
 
-            {/* --- SELECTION MODAL --- */}
-            <Modal visible={selectionModalVisible} animationType="fade" transparent>
+            {/* 선택 모달 - Supanova 바텀시트 */}
+            <Modal visible={selectionModalVisible} animationType="slide" transparent>
                 <TouchableOpacity
-                    className="flex-1 bg-black/50 justify-end pb-10 px-4"
+                    className="flex-1 bg-black/40 justify-end"
                     activeOpacity={1}
                     onPress={() => setSelectionModalVisible(false)}
                 >
-                    <Animated.View
-                        entering={FadeInUp.springify()}
-                        className="bg-white rounded-2xl overflow-hidden shadow-xl"
-                    >
+                    <View className="bg-white rounded-t-[32px] pb-10">
+                        {/* 핸들바 */}
+                        <View className="items-center pt-3 pb-4">
+                            <View className="w-10 h-1 rounded-full bg-gray-200" />
+                        </View>
                         <TouchableOpacity
                             onPress={() => handleSelectAction('event')}
-                            className="p-5 border-b border-gray-100 flex-row items-center justify-center bg-gray-50 active:bg-gray-100"
+                            className="py-4 px-6 flex-row items-center border-b border-gray-100 active:bg-gray-50"
                         >
                             <Text className="text-2xl mr-3">📅</Text>
-                            <Text className="text-lg font-bold text-gray-800">
+                            <Text className="text-base font-bold text-gray-900">
                                 {language === 'ko' ? "일정 추가하기" : "Add Event"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => handleSelectAction('todo')}
-                            className="p-5 border-b border-gray-100 flex-row items-center justify-center bg-white active:bg-gray-100"
+                            className="py-4 px-6 flex-row items-center border-b border-gray-100 active:bg-gray-50"
                         >
                             <Text className="text-2xl mr-3">✅</Text>
-                            <Text className="text-lg font-bold text-gray-800">
+                            <Text className="text-base font-bold text-gray-900">
                                 {language === 'ko' ? "할 일 추가하기" : "Add Todo"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => handleSelectAction('rotation')}
-                            className="p-5 flex-row items-center justify-center bg-white active:bg-gray-100"
+                            className="py-4 px-6 flex-row items-center active:bg-gray-50"
                         >
                             <Text className="text-2xl mr-3">🔄</Text>
-                            <Text className="text-lg font-bold text-gray-800">
+                            <Text className="text-base font-bold text-gray-900">
                                 {language === 'ko' ? "당번 규칙 정하기" : "Set Rotation"}
                             </Text>
                         </TouchableOpacity>
-                    </Animated.View>
-                    <TouchableOpacity
-                        onPress={() => setSelectionModalVisible(false)}
-                        className="bg-white rounded-xl p-4 mt-3 items-center shadow-lg"
-                    >
-                        <Text className="text-lg font-bold text-gray-900">{tCommon.cancel}</Text>
-                    </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
             </Modal>
 
-            {/* Calendar Modal */}
-            {/* Calendar Modal */}
-            <Modal animationType="fade" transparent={true} visible={calModalVisible} onRequestClose={() => setCalModalVisible(false)}>
+            {/* FAB 추가 버튼 - Supanova 스타일 */}
+            <TouchableOpacity
+                onPress={handleAddButtonPress}
+                className={cn("absolute bottom-8 right-5 w-14 h-14 rounded-full items-center justify-center z-30", themeBg)}
+                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+            >
+                <Ionicons name="add" size={28} color="white" />
+            </TouchableOpacity>
+
+            {/* 일정 추가 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent={true} visible={calModalVisible} onRequestClose={() => setCalModalVisible(false)}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    className="flex-1 bg-black/60 justify-center px-6"
+                    className="flex-1 bg-black/40 justify-end"
                 >
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             {/* Close Button */}
                             <TouchableOpacity
                                 onPress={() => { setCalModalVisible(false); setCalStep(1); }}
@@ -526,14 +536,18 @@ export default function PlanScreen() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* Todo Modal */}
-            <Modal animationType="fade" transparent={true} visible={todoModalVisible} onRequestClose={() => setTodoModalVisible(false)}>
+            {/* 할 일 추가 모달 - Supanova 바텀시트 */}
+            <Modal animationType="slide" transparent={true} visible={todoModalVisible} onRequestClose={() => setTodoModalVisible(false)}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    className="flex-1 bg-black/60 justify-center px-6"
+                    className="flex-1 bg-black/40 justify-end"
                 >
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             {/* Close Button */}
                             <TouchableOpacity
                                 onPress={() => { setTodoModalVisible(false); setTodoStep(1); }}

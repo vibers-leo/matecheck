@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Platform, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Platform, Modal, TouchableWithoutFeedback, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
@@ -15,6 +15,7 @@ import ActivityModal from '../../../components/ActivityModal';
 
 const { width, height } = Dimensions.get('window');
 
+// D-Day 계산 헬퍼
 const getDDay = (dateStr: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -44,12 +45,12 @@ export default function HomeScreen() {
     const [showMasterModal, setShowMasterModal] = useState(false);
     const tm = (translations[language] as any).master;
 
-    // isTossMode는 getThemeColors()의 isToss로 대체
+    // 테마 설정
+    const { bg: themeBg, text: themeText, bgSoft: themeItemBg, isToss } = getThemeColors(nestTheme, appMode);
     const isTossMode = isToss;
 
     useEffect(() => {
         if (isLoggedIn && hasSeenTutorial && !hasSeenMasterTutorial) {
-            // Delay a bit to not clash with initial animations
             const timer = setTimeout(() => {
                 setShowMasterModal(true);
             }, 1000);
@@ -57,10 +58,7 @@ export default function HomeScreen() {
         }
     }, [isLoggedIn, hasSeenTutorial, hasSeenMasterTutorial]);
 
-    // Theme setup
-    const { bg: themeBg, text: themeText, bgSoft: themeItemBg, isToss } = getThemeColors(nestTheme, appMode);
-
-    // Data Aggregation
+    // 데이터 집계
     const incompleteTodos = todos.filter((t: any) => !t.isCompleted).slice(0, 3);
     const todayStr = new Date().toISOString().split('T')[0];
     const upcomingEvents = events
@@ -68,7 +66,6 @@ export default function HomeScreen() {
         .sort((a: any, b: any) => a.date.localeCompare(b.date))
         .slice(0, 2);
 
-    // Top 3 Goals (Vision or Year preferred, else any)
     const activeGoals = goals.sort((a: any, b: any) => {
         const order = { vision: 0, year: 1, month: 2, week: 3 };
         return order[a.type as keyof typeof order] - order[b.type as keyof typeof order];
@@ -80,155 +77,222 @@ export default function HomeScreen() {
         else if (hour < 18) setGreeting(t.greeting_afternoon);
         else setGreeting(t.greeting_evening);
 
-        // Sync data if we have nestId
         if (nestId) {
             useUserStore.getState().syncAll();
         }
     }, [nestId, language]);
 
+    // Supanova 섹션 헤더
     const SectionHeader = ({ title, onPress }: { title: string, onPress: () => void }) => (
-        <View className="flex-row justify-between items-center mb-3 mt-6">
-            <Text className="text-lg font-bold text-gray-900">{title}</Text>
-            <TouchableOpacity onPress={onPress}>
-                <Text className="text-gray-400 text-sm">{language === 'ko' ? '더보기 ›' : 'More ›'}</Text>
+        <View className="flex-row justify-between items-center mb-3 mt-2">
+            <Text className="text-2xl font-bold tracking-tight text-gray-900">{title}</Text>
+            <TouchableOpacity onPress={onPress} className="py-2 px-3">
+                <Text className="text-xs text-gray-400 font-medium">{language === 'ko' ? '더보기' : 'More'}</Text>
             </TouchableOpacity>
         </View>
     );
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-gray-50">
             <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
-                {/* Nest Header (Modern & Simple) */}
-                <View className={cn("pt-16 pb-10 px-8 rounded-b-[48px] mb-8 items-start", isTossMode ? "bg-white" : themeItemBg)}>
-                    <View className="flex-row justify-between items-center w-full mb-6">
-                        <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-sm overflow-hidden p-2 transform -rotate-3 border border-gray-50">
-                            <Image
-                                source={(NEST_AVATARS.find((a: any) => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
-                                style={{ width: '100%', height: '100%' }}
-                                resizeMode="contain"
-                            />
+                {/* 상단 프로필 영역 — Supanova 클린 헤더 */}
+                <View className="pt-16 pb-6 px-5 bg-white">
+                    <View className="flex-row justify-between items-center mb-5">
+                        {/* 보금자리 아바타 + 인사말 */}
+                        <View className="flex-row items-center gap-3">
+                            <View className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center overflow-hidden border border-gray-100">
+                                <Image
+                                    source={(NEST_AVATARS.find((a: any) => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
+                                    style={{ width: '80%', height: '80%' }}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                            <View>
+                                <Text className="text-[11px] uppercase tracking-[0.15em] font-medium text-gray-400">
+                                    {isTossMode ? "ROOMMATECHECK" : greeting.toUpperCase()}
+                                </Text>
+                                <Text className="text-2xl font-bold tracking-tight text-gray-900">{nestName}</Text>
+                            </View>
                         </View>
-                        <TouchableOpacity
-                            onLongPress={() => {
-                                const next = isTossMode ? 'matecheck' : 'roommatecheck';
-                                setAppMode(next);
-                                Alert.alert(next === 'roommatecheck' ? '🏦 Toss Mode (RoommateCheck)' : '🏠 MateCheck Mode', '디자인 테마가 변경되었습니다.');
-                            }}
-                            onPress={() => router.push('/(tabs)/settings')}
-                            className="w-12 h-12 items-center justify-center rounded-2xl bg-gray-50/80"
-                        >
-                            <Ionicons name="settings-outline" size={24} color={isTossMode ? "#4E5968" : "#1F2937"} />
-                        </TouchableOpacity>
+
+                        {/* 알림 + 설정 */}
+                        <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                                onPress={() => setActivityModalVisible(true)}
+                                className="w-11 h-11 items-center justify-center rounded-full bg-gray-50"
+                                style={{ minHeight: 44, minWidth: 44 }}
+                            >
+                                <Ionicons name="notifications-outline" size={20} color="#6B7280" />
+                                <View className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onLongPress={() => {
+                                    const next = isTossMode ? 'matecheck' : 'roommatecheck';
+                                    setAppMode(next);
+                                    Alert.alert(next === 'roommatecheck' ? 'Toss Mode' : 'MateCheck Mode', '디자인 테마가 변경되었습니다.');
+                                }}
+                                onPress={() => router.push('/(tabs)/settings')}
+                                className="w-11 h-11 items-center justify-center rounded-full bg-gray-50"
+                                style={{ minHeight: 44, minWidth: 44 }}
+                            >
+                                <Ionicons name="settings-outline" size={20} color="#6B7280" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
-                    <View>
-                        <Text className={cn("font-bold text-sm mb-1 tracking-wide uppercase", isTossMode ? "text-toss-blue" : themeText)}>
-                            {isTossMode ? "룸메체크" : greeting}
-                        </Text>
-                        <Text className={cn("font-black text-gray-900", isTossMode ? "text-4xl" : "text-3xl")}>{isTossMode ? nestName : nestName}</Text>
-                    </View>
-
-                    {/* Member Stack (Clean Pill) */}
-                    <View className={cn("flex-row items-center py-2.5 pl-2.5 pr-5 rounded-full mt-6 shadow-sm border", isTossMode ? "bg-toss-gray-input border-transparent" : "bg-white border-gray-100")}>
-                        <View className="flex-row -space-x-2 mr-3">
+                    {/* 멤버 필 — 깔끔한 컴팩트 */}
+                    <TouchableOpacity
+                        onPress={() => router.push('/member_management')}
+                        className="flex-row items-center py-2 px-3 rounded-full bg-gray-50 self-start"
+                    >
+                        <View className="flex-row -space-x-2 mr-2">
                             {members.slice(0, 4).map((m: any, i: number) => (
                                 <Avatar
                                     key={m.id}
                                     source={(AVATARS[m.avatarId] || AVATARS[0]).image}
                                     size="xs"
-                                    borderColor="#FFFFFF"
+                                    borderColor="#F9FAFB"
                                     borderWidth={2}
                                 />
                             ))}
                         </View>
-                        <Text className="text-gray-600 font-bold text-xs">
+                        <Text className="text-xs text-gray-500 font-medium">
                             {members.length === 0 ? t.empty_mate : language === 'ko' ? `${members.length}명의 메이트` : `${members.length} Mates`}
                         </Text>
-                    </View>
-
-                    <TouchableOpacity
-                        className="absolute top-14 right-4 w-10 h-10 items-center justify-center rounded-full bg-white shadow-sm"
-                        onPress={() => router.push('/(tabs)/settings')}
-                    >
-                        <Ionicons name="settings-outline" size={22} color="#1F2937" />
+                        <Ionicons name="chevron-forward" size={14} color="#9CA3AF" className="ml-1" />
                     </TouchableOpacity>
                 </View>
 
-                <View className="px-6 gap-6">
+                <View className="px-5 gap-4 mt-4">
 
-                    {/* 1. Smart Briefing Card (Modern Dark) */}
-                    <Animated.View entering={FadeInUp.delay(200)} className="bg-gray-900 rounded-[32px] p-6 shadow-xl shadow-gray-200">
-                        <View className="flex-row items-center justify-between mb-6">
-                            <View className="flex-row items-center gap-3">
-                                <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center">
-                                    <Text className="text-xl">✨</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">{language === 'ko' ? "데일리 브리핑" : "Daily Briefing"}</Text>
-                                    <Text className="text-white text-lg font-bold">오늘의 체크리스트</Text>
-                                </View>
+                    {/* 빠른 액션 그리드 — 2x2 Supanova 스타일 */}
+                    <Animated.View entering={FadeInUp.delay(80)}>
+                        <View className="flex-row gap-3">
+                            {[
+                                { icon: 'checkbox-outline' as const, label: language === 'ko' ? '할 일' : 'Tasks', color: '#3B82F6', bg: '#EFF6FF', onPress: () => router.push('/(tabs)/plan') },
+                                { icon: 'calendar-outline' as const, label: language === 'ko' ? '일정' : 'Events', color: '#F59E0B', bg: '#FFFBEB', onPress: () => router.push('/(tabs)/plan') },
+                                { icon: 'wallet-outline' as const, label: language === 'ko' ? '가계부' : 'Budget', color: '#10B981', bg: '#ECFDF5', onPress: () => router.push('/(tabs)/plan') },
+                                { icon: 'flag-outline' as const, label: language === 'ko' ? '목표' : 'Goals', color: '#8B5CF6', bg: '#F5F3FF', onPress: () => router.push('/(tabs)/rules') },
+                            ].map((item, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    onPress={item.onPress}
+                                    className="flex-1 bg-white rounded-2xl p-4 items-center justify-center"
+                                    style={{
+                                        minHeight: 44,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.06,
+                                        shadowRadius: 12,
+                                        elevation: 2,
+                                    }}
+                                >
+                                    <View className="w-10 h-10 rounded-xl items-center justify-center mb-2" style={{ backgroundColor: item.bg }}>
+                                        <Ionicons name={item.icon} size={20} color={item.color} />
+                                    </View>
+                                    <Text className="text-xs font-semibold text-gray-700">{item.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </Animated.View>
+
+                    {/* 데일리 브리핑 카드 — Supanova 화이트 카드 */}
+                    <Animated.View
+                        entering={FadeInUp.delay(160)}
+                        className="bg-white rounded-3xl p-5"
+                        style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.06,
+                            shadowRadius: 12,
+                            elevation: 2,
+                        }}
+                    >
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View>
+                                <Text className="text-[11px] uppercase tracking-[0.15em] font-medium text-gray-400 mb-1">
+                                    {language === 'ko' ? "데일리 브리핑" : "DAILY BRIEFING"}
+                                </Text>
+                                <Text className="text-lg font-bold tracking-tight text-gray-900">
+                                    {language === 'ko' ? '오늘의 체크리스트' : "Today's Checklist"}
+                                </Text>
                             </View>
-                            <TouchableOpacity onPress={() => setActivityModalVisible(true)} className="w-8 h-8 bg-gray-800 rounded-full items-center justify-center">
-                                <Ionicons name="notifications" size={16} color="white" />
-                                <View className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-gray-900" />
-                            </TouchableOpacity>
+                            <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                                <Text className="text-lg">✨</Text>
+                            </View>
                         </View>
 
                         <View className="gap-3">
-                            {/* Smart Content Logic */}
+                            {/* 스마트 콘텐츠 */}
                             {upcomingEvents.length > 0 ? (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-orange-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">📅</Text>
+                                <View className="bg-orange-50 p-4 rounded-2xl flex-row gap-3 items-center">
+                                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center">
+                                        <Text className="text-base">📅</Text>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-orange-300 font-bold text-xs mb-1">D-{getDDay(upcomingEvents[0].date).replace('D-', '')} {language === 'ko' ? "일정 예정" : "Upcoming"}</Text>
-                                        <Text className="text-white font-bold text-base" numberOfLines={1}>{upcomingEvents[0].title}</Text>
+                                        <Text className="text-orange-600 font-semibold text-xs mb-0.5">
+                                            {getDDay(upcomingEvents[0].date)} {language === 'ko' ? "일정 예정" : "Upcoming"}
+                                        </Text>
+                                        <Text className="text-gray-900 font-bold text-base" numberOfLines={1}>{upcomingEvents[0].title}</Text>
                                     </View>
                                 </View>
                             ) : activeGoals.length > 0 ? (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-blue-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">🏆</Text>
+                                <View className="bg-blue-50 p-4 rounded-2xl flex-row gap-3 items-center">
+                                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center">
+                                        <Text className="text-base">🏆</Text>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-blue-300 font-bold text-xs mb-1">{language === 'ko' ? "집중 목표" : "Focus Goal"}</Text>
-                                        <Text className="text-white font-bold text-base" numberOfLines={1}>{activeGoals[0].title}</Text>
-                                        <Text className="text-gray-400 text-xs mt-1">{activeGoals[0].current}% 달성 중</Text>
+                                        <Text className="text-blue-600 font-semibold text-xs mb-0.5">{language === 'ko' ? "집중 목표" : "Focus Goal"}</Text>
+                                        <Text className="text-gray-900 font-bold text-base" numberOfLines={1}>{activeGoals[0].title}</Text>
+                                        <Text className="text-gray-400 text-xs mt-0.5">{activeGoals[0].current}% {language === 'ko' ? '달성 중' : 'achieved'}</Text>
                                     </View>
                                 </View>
                             ) : (
-                                <View className="bg-gray-800 p-4 rounded-2xl flex-row gap-4 items-center">
-                                    <View className="bg-green-500/20 w-10 h-10 rounded-xl items-center justify-center">
-                                        <Text className="text-lg">🌿</Text>
+                                <View className="bg-green-50 p-4 rounded-2xl flex-row gap-3 items-center">
+                                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center">
+                                        <Text className="text-base">🌿</Text>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-green-300 font-bold text-xs mb-1">{language === 'ko' ? "평온한 하루" : "Peaceful Day"}</Text>
-                                        <Text className="text-white font-bold text-base">오늘 하루도 행복하게!</Text>
+                                        <Text className="text-green-600 font-semibold text-xs mb-0.5">{language === 'ko' ? "평온한 하루" : "Peaceful Day"}</Text>
+                                        <Text className="text-gray-900 font-bold text-base">{language === 'ko' ? '오늘 하루도 행복하게!' : 'Have a great day!'}</Text>
                                     </View>
                                 </View>
                             )}
 
                             {incompleteTodos.length > 0 && (
-                                <View className="bg-gray-800/50 p-4 rounded-2xl flex-row justify-between items-center">
-                                    <Text className="text-gray-400 font-medium text-sm">남은 할 일</Text>
+                                <TouchableOpacity
+                                    onPress={() => router.push('/(tabs)/plan')}
+                                    className="bg-gray-50 p-4 rounded-2xl flex-row justify-between items-center"
+                                >
+                                    <Text className="text-gray-500 font-medium text-sm">{language === 'ko' ? '남은 할 일' : 'Remaining tasks'}</Text>
                                     <View className="flex-row items-center gap-2">
-                                        <Text className="text-white font-bold">{incompleteTodos.length}개</Text>
+                                        <Text className="text-gray-900 font-bold">{incompleteTodos.length}{language === 'ko' ? '개' : ''}</Text>
                                         <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             )}
                         </View>
                     </Animated.View>
 
-                    {/* 2. Upcoming Schedule (Clean List) */}
+                    {/* 돌아오는 일정 — Supanova 카드 리스트 */}
                     <View>
-                        <SectionHeader title="돌아오는 일정 📅" onPress={() => router.push('/(tabs)/plan')} />
+                        <SectionHeader title={language === 'ko' ? "돌아오는 일정" : "Upcoming"} onPress={() => router.push('/(tabs)/plan')} />
                         {upcomingEvents.length === 0 ? (
-                            <View className="bg-gray-50 p-8 rounded-[32px] items-center justify-center border border-gray-100/50">
-                                <Text className="text-4xl mb-4 opacity-30">🗓️</Text>
-                                <Text className="text-gray-400 font-medium">등록된 일정이 없어요</Text>
+                            <View
+                                className="bg-white rounded-3xl p-8 items-center justify-center"
+                                style={{
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.06,
+                                    shadowRadius: 12,
+                                    elevation: 2,
+                                }}
+                            >
+                                <View className="w-16 h-16 bg-gray-50 rounded-full items-center justify-center mb-3">
+                                    <Ionicons name="calendar-outline" size={28} color="#D1D5DB" />
+                                </View>
+                                <Text className="text-gray-400 font-medium text-sm">{language === 'ko' ? '등록된 일정이 없어요' : 'No upcoming events'}</Text>
                             </View>
                         ) : (
                             <View className="gap-3">
@@ -237,28 +301,35 @@ export default function HomeScreen() {
                                     const isToday = dday === '오늘';
 
                                     return (
-                                        <Animated.View key={evt.id} entering={FadeInDown.delay(index * 100 + 300)}
-                                            className="flex-row bg-white p-5 rounded-3xl border border-gray-100 items-center shadow-sm"
+                                        <Animated.View
+                                            key={evt.id}
+                                            entering={FadeInUp.delay(index * 80 + 240)}
+                                            className="flex-row bg-white p-5 rounded-3xl items-center"
+                                            style={{
+                                                shadowColor: '#000',
+                                                shadowOffset: { width: 0, height: 2 },
+                                                shadowOpacity: 0.06,
+                                                shadowRadius: 12,
+                                                elevation: 2,
+                                            }}
                                         >
-                                            {/* Date Box (Modern) */}
-                                            <View className={cn("w-14 h-14 rounded-2xl items-center justify-center mr-5", isToday ? "bg-gray-900" : "bg-gray-50")}>
-                                                <Text className={cn("text-[10px] font-bold uppercase", isToday ? "text-gray-400" : "text-gray-400")}>
-                                                    {new Date(evt.date).getMonth() + 1}월
+                                            {/* 날짜 박스 */}
+                                            <View className={cn("w-12 h-12 rounded-2xl items-center justify-center mr-4", isToday ? "bg-gray-900" : "bg-gray-50")}>
+                                                <Text className={cn("text-[10px] font-medium", isToday ? "text-gray-400" : "text-gray-400")}>
+                                                    {new Date(evt.date).getMonth() + 1}{language === 'ko' ? '월' : ''}
                                                 </Text>
-                                                <Text className={cn("text-xl font-black", isToday ? "text-white" : "text-gray-900")}>
+                                                <Text className={cn("text-lg font-bold", isToday ? "text-white" : "text-gray-900")}>
                                                     {new Date(evt.date).getDate()}
                                                 </Text>
                                             </View>
 
-                                            {/* Content */}
-                                            <View className="flex-1 gap-1">
-                                                <View className="flex-row justify-between items-center">
-                                                    <View className={cn("px-2 py-0.5 rounded-md self-start mb-1", isToday ? "bg-red-50" : "bg-gray-100")}>
-                                                        <Text className={cn("text-[10px] font-bold", isToday ? "text-red-500" : "text-gray-500")}>{dday}</Text>
-                                                    </View>
+                                            {/* 콘텐츠 */}
+                                            <View className="flex-1">
+                                                <View className={cn("px-2 py-0.5 rounded-md self-start mb-1", isToday ? "bg-red-50" : "bg-gray-100")}>
+                                                    <Text className={cn("text-[10px] font-semibold", isToday ? "text-red-500" : "text-gray-500")}>{dday}</Text>
                                                 </View>
                                                 <Text className="font-bold text-gray-900 text-base" numberOfLines={1}>{evt.title}</Text>
-                                                <Text className="text-gray-400 text-xs font-medium">
+                                                <Text className="text-xs text-gray-400 mt-0.5">
                                                     {evt.endDate ? `${evt.date} ~ ${evt.endDate}` : 'All Day'}
                                                 </Text>
                                             </View>
@@ -270,62 +341,67 @@ export default function HomeScreen() {
                         {upcomingEvents.length > 0 && (
                             <TouchableOpacity
                                 onPress={() => router.push('/(tabs)/plan')}
-                                className="mt-4 flex-row justify-center items-center py-4 bg-gray-50 rounded-2xl active:bg-gray-100"
+                                className="mt-3 flex-row justify-center items-center py-3.5 bg-white rounded-full"
+                                style={{
+                                    minHeight: 44,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.06,
+                                    shadowRadius: 12,
+                                    elevation: 2,
+                                }}
                             >
-                                <Text className="text-gray-500 font-bold text-sm">전체 일정 보기</Text>
-                                <Ionicons name="arrow-forward" size={16} color="#6B7280" className="ml-2" />
+                                <Text className="text-gray-600 font-semibold text-sm">{language === 'ko' ? '전체 일정 보기' : 'View all events'}</Text>
+                                <Ionicons name="arrow-forward" size={14} color="#6B7280" style={{ marginLeft: 6 }} />
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    {/* 3. Life Info Banner (New) */}
-                    <TouchableOpacity
-                        onPress={() => router.push('/life_info')}
-                        activeOpacity={0.9}
-                        className="bg-indigo-600 rounded-[32px] p-6 shadow-xl shadow-indigo-200 overflow-hidden relative"
-                    >
-                        {/* Background Deco */}
-                        <View className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-                        <View className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8" />
-
-                        <View className="flex-row items-center justify-between">
-                            <View className="flex-1 mr-4">
-                                <View className="bg-white/20 px-3 py-1 rounded-full self-start mb-3">
-                                    <Text className="text-white text-[10px] font-bold">✨ AI 맞춤 추천</Text>
-                                </View>
-                                <Text className="text-white text-xl font-black mb-1 leading-tight">
-                                    놓치고 있는 혜택,{'\n'}지금 바로 확인하세요!
+                    {/* 생활 정보 배너 — Supanova 카드 스타일 */}
+                    <Animated.View entering={FadeInUp.delay(320)}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/life_info')}
+                            activeOpacity={0.9}
+                            className="bg-white rounded-3xl p-5 flex-row items-center"
+                            style={{
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.06,
+                                shadowRadius: 12,
+                                elevation: 2,
+                            }}
+                        >
+                            <View className="bg-indigo-50 w-12 h-12 rounded-2xl items-center justify-center mr-4">
+                                <Ionicons name="sparkles" size={22} color="#6366F1" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-[11px] uppercase tracking-[0.15em] font-medium text-indigo-400 mb-0.5">
+                                    {language === 'ko' ? 'AI 맞춤 추천' : 'AI RECOMMENDATION'}
                                 </Text>
-                                <Text className="text-indigo-200 text-xs font-medium">
-                                    내 조건에 딱 맞는 지원금을 찾아드려요
+                                <Text className="text-base font-bold text-gray-900">
+                                    {language === 'ko' ? '놓치고 있는 혜택 확인하기' : 'Check benefits you might miss'}
                                 </Text>
                             </View>
-                            <View className="w-16 h-16 bg-white rounded-2xl items-center justify-center shadow-lg transform rotate-6">
-                                <Ionicons name="sparkles" size={32} color="#4F46E5" />
-                            </View>
-                        </View>
-
-                        <View className="mt-6 flex-row items-center">
-                            <Text className="text-white font-bold text-sm mr-2">생활 정보 보러가기</Text>
-                            <Ionicons name="arrow-forward" size={16} color="white" />
-                        </View>
-                    </TouchableOpacity>
+                            <Ionicons name="chevron-forward" size={18} color="#C7D2FE" />
+                        </TouchableOpacity>
+                    </Animated.View>
 
                 </View>
-            </ScrollView >
+            </ScrollView>
 
+            {/* 튜토리얼 오버레이 — 기존 기능 유지 */}
             <TutorialOverlay
                 visible={!hasSeenTutorial}
                 onComplete={completeTutorial}
                 steps={[
                     {
-                        target: { x: 0, y: 0, width: width, height: 260, borderRadius: 0 },
+                        target: { x: 0, y: 0, width: width, height: 200, borderRadius: 0 },
                         title: (translations[language] as any).tutorial.step1_title,
                         description: (translations[language] as any).tutorial.step1_desc,
                         position: "bottom"
                     },
                     {
-                        target: { x: 20, y: 280, width: width - 40, height: 220, borderRadius: 32 },
+                        target: { x: 16, y: 280, width: width - 32, height: 200, borderRadius: 24 },
                         title: (translations[language] as any).tutorial.step2_title,
                         description: (translations[language] as any).tutorial.step2_desc,
                         position: "bottom"
@@ -352,13 +428,13 @@ export default function HomeScreen() {
                 onClose={() => setActivityModalVisible(false)}
             />
 
-            {/* Master Tutorial Modal */}
+            {/* 마스터 튜토리얼 모달 — Supanova 스타일 */}
             <Modal
                 visible={showMasterModal}
                 transparent
                 animationType="fade"
             >
-                <View className="flex-1 bg-black/60 items-center justify-center px-6">
+                <View className="flex-1 bg-black/50 items-center justify-center px-5">
                     <TouchableWithoutFeedback onPress={() => {
                         completeMasterTutorial();
                         setShowMasterModal(false);
@@ -368,28 +444,32 @@ export default function HomeScreen() {
 
                     <Animated.View
                         entering={FadeInUp.springify().damping(12)}
-                        className="bg-white rounded-[40px] w-full p-8 items-center shadow-2xl relative"
+                        className="bg-white rounded-3xl w-full p-6 items-center"
+                        style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.12,
+                            shadowRadius: 24,
+                            elevation: 8,
+                        }}
                     >
-                        {/* Decorative background circle */}
-                        <View className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/10 rounded-full" />
-
-                        <View className="w-24 h-24 bg-yellow-400 rounded-[32px] items-center justify-center mb-8 shadow-xl shadow-yellow-100 transform -rotate-6">
-                            <Text className="text-5xl">👑</Text>
+                        <View className="w-20 h-20 bg-yellow-50 rounded-3xl items-center justify-center mb-6">
+                            <Text className="text-4xl">👑</Text>
                         </View>
 
-                        <Text className="text-3xl font-black text-gray-900 mb-3 text-center leading-tight">
+                        <Text className="text-2xl font-bold tracking-tight text-gray-900 mb-2 text-center">
                             {tm.tutorial_title}
                         </Text>
 
-                        <Text className="text-gray-500 text-center leading-7 mb-8 font-medium px-2">
+                        <Text className="text-gray-500 text-center leading-6 mb-6 font-medium text-sm">
                             {tm.tutorial_desc}
                         </Text>
 
-                        <View className="bg-orange-50 p-5 rounded-3xl mb-10 w-full border border-orange-100 flex-row items-center gap-4">
-                            <View className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm">
-                                <Text className="text-lg">💡</Text>
+                        <View className="bg-orange-50 p-4 rounded-2xl mb-6 w-full flex-row items-center gap-3">
+                            <View className="w-9 h-9 bg-white rounded-full items-center justify-center">
+                                <Text className="text-base">💡</Text>
                             </View>
-                            <Text className="flex-1 text-orange-700 text-xs font-bold leading-5">
+                            <Text className="flex-1 text-orange-700 text-xs font-medium leading-5">
                                 {tm.grant_notice}
                             </Text>
                         </View>
@@ -399,13 +479,16 @@ export default function HomeScreen() {
                                 completeMasterTutorial();
                                 setShowMasterModal(false);
                             }}
-                            className="bg-gray-900 w-full py-6 rounded-[30px] items-center shadow-xl shadow-gray-200"
+                            className="bg-gray-900 w-full py-3.5 rounded-full items-center"
+                            style={{ minHeight: 44 }}
                         >
-                            <Text className="text-white font-black text-lg">확인했습니다</Text>
+                            <Text className="text-white font-semibold text-base">
+                                {language === 'ko' ? '확인했습니다' : 'Got it'}
+                            </Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </View>
             </Modal>
-        </View >
+        </View>
     );
 }

@@ -96,58 +96,42 @@ export default function AnniversaryScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Header (Modern Simple Style) */}
-            <View className="pt-12 pb-6 px-6 bg-white shadow-sm rounded-b-[40px] z-20 mb-6 flex-row justify-between items-center">
-                <Text className="text-2xl font-black text-gray-900">{t.title}</Text>
-                <TouchableOpacity
-                    onPress={() => setModalVisible(true)}
-                    className="w-12 h-12 rounded-full items-center justify-center shadow-lg shadow-orange-200 bg-orange-500"
-                >
-                    <Ionicons name="add" size={28} color="white" />
-                </TouchableOpacity>
+            {/* 헤더 - Supanova 스타일 */}
+            <View className="pt-14 pb-5 px-5 bg-white z-20 flex-row justify-between items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12 }}>
+                <Text className="text-xl font-bold tracking-tight text-gray-900">{t.title}</Text>
             </View>
 
-            {/* Anniversary List */}
-            <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 120 }}>
+            {/* 기념일 목록 */}
+            <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>
                 {anniversaries.length === 0 ? (
-                    <View className="items-center justify-center py-20">
-                        <Text className="text-6xl mb-4">📅</Text>
-                        <Text className="text-gray-400 text-lg">{t.empty_desc}</Text>
-                        <Text className="text-gray-300 text-sm mt-2">{t.empty_hint}</Text>
+                    /* 빈 상태 - Supanova 스타일 */
+                    <View className="bg-white rounded-3xl p-10 items-center justify-center mt-4" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}>
+                        <Ionicons name="gift-outline" size={40} color="#D1D5DB" />
+                        <Text className="text-gray-300 font-bold text-sm mt-3">{t.empty_desc}</Text>
                     </View>
                 ) : (
-                    anniversaries.map((anniversary, index) => (
-                        <Animated.View
-                            key={anniversary.id}
-                            entering={FadeInDown.delay(index * 100)}
-                            className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
-                        >
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-1">
-                                    <View className="flex-row items-center mb-2">
-                                        <View className={`${getCategoryColor(anniversary.category)} px-3 py-1 rounded-full mr-2`}>
-                                            <Text className="text-white text-xs font-bold">
-                                                {getCategoryEmoji(anniversary.category)} {getCategoryLabel(anniversary.category)}
-                                            </Text>
+                    anniversaries.map((anniversary, index) => {
+                        const ddayText = calculateDday(anniversary.anniversary_date);
+                        const isToday = ddayText === t.d_day;
+                        return (
+                            <Animated.View
+                                key={anniversary.id}
+                                entering={FadeInDown.delay(index * 80)}
+                                className={cn("bg-white rounded-3xl p-5 mb-4", isToday && "border-2 border-orange-200")}
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12 }}
+                            >
+                                {/* D-day 뱃지 - 크게 표시 */}
+                                <View className="flex-row items-center justify-between mb-3">
+                                    <View className="flex-row items-center gap-2">
+                                        <View className={`${getCategoryColor(anniversary.category)} w-8 h-8 rounded-lg items-center justify-center`}>
+                                            <Text className="text-sm">{getCategoryEmoji(anniversary.category)}</Text>
                                         </View>
+                                        <Text className="text-xs font-bold text-gray-400">{getCategoryLabel(anniversary.category)}</Text>
                                         {anniversary.is_recurring && (
-                                            <View className="bg-blue-100 px-2 py-1 rounded-full">
-                                                <Text className="text-blue-600 text-xs font-bold">🔄 {t.form_recurring}</Text>
+                                            <View className="bg-blue-50 px-2 py-0.5 rounded-full">
+                                                <Text className="text-blue-500 text-[10px] font-bold">반복</Text>
                                             </View>
                                         )}
-                                    </View>
-                                    <Text className="text-lg font-bold text-gray-900 mb-1">
-                                        {anniversary.title}
-                                    </Text>
-                                    <Text className="text-gray-500 text-sm">
-                                        {new Date(anniversary.anniversary_date).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')}
-                                    </Text>
-                                </View>
-                                <View className="items-end">
-                                    <View className="bg-orange-50 px-4 py-2 rounded-xl mb-2">
-                                        <Text className="text-orange-600 text-xl font-bold">
-                                            {calculateDday(anniversary.anniversary_date)}
-                                        </Text>
                                     </View>
                                     <TouchableOpacity
                                         onPress={() => {
@@ -160,21 +144,52 @@ export default function AnniversaryScreen() {
                                                 ]
                                             );
                                         }}
+                                        className="p-1"
                                     >
-                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                        <Ionicons name="trash-outline" size={16} color="#D1D5DB" />
                                     </TouchableOpacity>
                                 </View>
-                            </View>
-                        </Animated.View>
-                    ))
+
+                                <View className="flex-row items-end justify-between">
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-bold text-gray-900 mb-1">
+                                            {anniversary.title}
+                                        </Text>
+                                        <Text className="text-gray-400 text-sm">
+                                            {new Date(anniversary.anniversary_date).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')}
+                                        </Text>
+                                    </View>
+                                    {/* D-day 강조 */}
+                                    <View className={cn("px-4 py-2 rounded-2xl", isToday ? "bg-orange-500" : "bg-gray-50")}>
+                                        <Text className={cn("text-xl font-bold", isToday ? "text-white" : "text-gray-900")}>
+                                            {ddayText}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </Animated.View>
+                        );
+                    })
                 )}
             </ScrollView>
 
-            {/* Add Anniversary Modal */}
-            <Modal visible={modalVisible} animationType="fade" transparent>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/60 justify-center px-6">
+            {/* FAB 추가 버튼 - Supanova 스타일 */}
+            <TouchableOpacity
+                onPress={() => setModalVisible(true)}
+                className="absolute bottom-8 right-5 w-14 h-14 rounded-full items-center justify-center z-30 bg-orange-500"
+                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+            >
+                <Ionicons name="add" size={28} color="white" />
+            </TouchableOpacity>
+
+            {/* 기념일 추가 모달 - Supanova 바텀시트 */}
+            <Modal visible={modalVisible} animationType="slide" transparent>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-black/40 justify-end">
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View className="bg-white rounded-[40px] p-8 shadow-2xl relative">
+                        <View className="bg-white rounded-t-[32px] p-6 relative" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+                            {/* 핸들바 */}
+                            <View className="items-center mb-4 -mt-2">
+                                <View className="w-10 h-1 rounded-full bg-gray-200" />
+                            </View>
                             <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); setStep(1); }} className="absolute top-6 right-6 w-10 h-10 items-center justify-center bg-gray-100 rounded-full">
                                 <Ionicons name="close" size={24} color="#94A3B8" />
                             </TouchableOpacity>

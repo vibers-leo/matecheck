@@ -10,6 +10,23 @@ import { AVATARS, NEST_AVATARS } from '../../../constants/data';
 import { Ionicons } from '@expo/vector-icons';
 import AvatarPicker from '../../../components/AvatarPicker';
 
+/* 온보딩 진행 표시기 */
+function StepIndicator({ current, total }: { current: number; total: number }) {
+    return (
+        <View className="flex-row gap-2 mb-6">
+            {Array.from({ length: total }).map((_, i) => (
+                <View
+                    key={i}
+                    className={cn(
+                        "h-1 rounded-full flex-1",
+                        i < current ? "bg-primary" : "bg-gray-100"
+                    )}
+                />
+            ))}
+        </View>
+    );
+}
+
 export default function CreateNestScreen() {
     const router = useRouter();
     const { setNest, nickname, avatarId, nestAvatarId, userEmail, language, setProfile } = useUserStore();
@@ -41,37 +58,43 @@ export default function CreateNestScreen() {
                 setNest(data.name, data.theme_id, data.invite_code, data.id.toString(), '', data.avatar_id, true);
                 router.replace('/(tabs)/home');
             } else {
-                Alert.alert("Error", data.errors?.join(', ') || "Failed to create.");
+                Alert.alert("오류", data.errors?.join(', ') || "생성에 실패했습니다.");
             }
         } catch (error) {
             console.error(error);
-            Alert.alert("Error", "Server connection failed.");
+            Alert.alert("오류", "서버 연결에 실패했습니다.");
         }
     };
 
     return (
-        <View className="flex-1 bg-white pt-12 px-6">
+        <View className="flex-1 bg-white pt-12 px-5">
             <Animated.View entering={FadeInDown.delay(100).springify()}>
-                <Text className="text-gray-400 font-medium mb-1 text-sm">{t.step3}</Text>
-                <Text className="text-2xl font-bold text-gray-800 mb-8 leading-9">
+                {/* 진행 표시기 */}
+                <StepIndicator current={3} total={3} />
+
+                {/* Eyebrow + 제목 */}
+                <Text className="eyebrow text-primary mb-2">{t.step3}</Text>
+                <Text className="text-heading-2 text-gray-900 tracking-tight leading-snug mb-2">
                     {t.create_title}
                 </Text>
+                <Text className="caption mb-6">보금자리의 이름과 프로필을 설정하세요</Text>
 
-                <View className="items-center mb-10">
+                {/* 아바타 카드 */}
+                <View className="card-mobile items-center mb-6">
                     <TouchableOpacity
                         onPress={() => setPickerVisible(true)}
                         className="items-center relative"
                     >
                         <Image
                             source={(NEST_AVATARS.find(a => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
-                            className="w-24 h-24 rounded-full border-4 border-white shadow-sm bg-gray-50"
+                            className="w-20 h-20 rounded-full border-2 border-gray-100 bg-gray-50"
                             resizeMode="contain"
                         />
-                        <View className="absolute bottom-0 right-0 bg-gray-900 p-2 rounded-full border-2 border-white">
-                            <Ionicons name="camera" size={14} color="white" />
+                        <View className="absolute bottom-0 right-0 bg-gray-900 p-1.5 rounded-full border-2 border-white">
+                            <Ionicons name="camera" size={12} color="white" />
                         </View>
                     </TouchableOpacity>
-                    <Text className="text-gray-400 text-xs mt-3">프로필 사진 변경</Text>
+                    <Text className="caption mt-3">프로필 사진 변경</Text>
                 </View>
 
                 <AvatarPicker
@@ -82,27 +105,31 @@ export default function CreateNestScreen() {
                     avatars={NEST_AVATARS}
                 />
 
-                <Text className="text-base font-semibold text-gray-700 mb-3 ml-1">{t.nest_name_label}</Text>
+                {/* 보금자리 이름 입력 */}
+                <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">{t.nest_name_label}</Text>
                 <TextInput
                     value={name}
                     onChangeText={setName}
                     placeholder={t.nest_name_placeholder}
-                    placeholderTextColor="#E2E8F0"
-                    className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl p-5 text-gray-800 text-lg focus:border-orange-200"
+                    placeholderTextColor="#D1D5DB"
+                    className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                     autoFocus
                 />
             </Animated.View>
 
-            <View className="flex-1 justify-end pb-12">
+            {/* 하단 고정 CTA */}
+            <View className="flex-1 justify-end pb-10">
                 <TouchableOpacity
                     onPress={handleCreate}
                     disabled={!name.trim()}
                     className={cn(
-                        "w-full py-5 rounded-2xl items-center",
-                        name.trim() ? "bg-orange-500 shadow-lg shadow-orange-100" : "bg-gray-100"
+                        "btn-primary w-full",
+                        name.trim() ? "bg-primary" : "bg-gray-100"
                     )}
                 >
-                    <Text className={cn("font-bold text-lg", name.trim() ? "text-white" : "text-gray-400")}>{t.start_btn}</Text>
+                    <Text className={cn("font-semibold text-base", name.trim() ? "text-white" : "text-gray-400")}>
+                        {t.start_btn}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </View>
