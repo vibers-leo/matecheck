@@ -1,10 +1,2 @@
-import { Stack } from 'expo-router';
-
-export default function OnboardingLayout() {
-    return (
-        <Stack screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right'
-        }} />
-    );
-}
+// toss와 mate 공통 레이아웃 — 중복 제거를 위해 mate에서 재사용
+export { default } from '../../mate/(onboarding)/_layout';

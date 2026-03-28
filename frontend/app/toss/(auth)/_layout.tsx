@@ -1,10 +1,2 @@
-import { Stack } from 'expo-router';
-
-export default function AuthLayout() {
-    return (
-        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="signup" />
-        </Stack>
-    );
-}
+// toss와 mate 공통 레이아웃 — 중복 제거를 위해 mate에서 재사용
+export { default } from '../../mate/(auth)/_layout';
