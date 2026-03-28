@@ -1,5 +1,7 @@
 class Nest < ApplicationRecord
   has_many :users
+  # SplitBillsController, ChoreRotationsController에서 @nest.members로 접근
+  has_many :members, class_name: 'User', foreign_key: 'nest_id'
   has_many :missions, dependent: :destroy
   has_many :calendar_events, dependent: :destroy
   has_many :goals, dependent: :destroy

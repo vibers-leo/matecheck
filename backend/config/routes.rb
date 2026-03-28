@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   post '/signup', to: 'users#create'
   post '/login', to: 'sessions#create'
+  post '/refresh', to: 'sessions#refresh'
   post '/auth/kakao', to: 'kakao_auth#create'
   post '/auth/google', to: 'google_auth#create'
   post '/auth/naver', to: 'naver_auth#create'
@@ -10,7 +11,7 @@ Rails.application.routes.draw do
   put '/users/password', to: 'users#update_password'
   delete '/users', to: 'users#destroy'
   
-  resources :nests, only: [:create, :show] do
+  resources :nests, only: [:create, :show, :update] do
     post 'join', on: :collection
     get 'requests', on: :member
     patch 'approve/:user_id', on: :member, to: 'nests#approve'

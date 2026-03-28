@@ -64,7 +64,8 @@ export default function SignupScreen() {
 
             if (response.ok) {
                 setStoreEmail(email);
-                router.push('/(onboarding)/nest_choice');
+                // 프로필 설정을 먼저 진행한 후 nest_choice로 이동
+                router.push('/(onboarding)/profile');
             } else {
                 if (data.errors) {
                     setErrorMessage(data.errors.join('\n'));

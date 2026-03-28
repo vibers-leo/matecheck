@@ -67,3 +67,6 @@ gem "kaminari"
 # 에러 추적
 gem "sentry-ruby"
 gem "sentry-rails"
+
+# JWT 인증
+gem "jwt"

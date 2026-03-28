@@ -20,16 +20,22 @@ class ApplicationController < ActionController::API
   private
 
   def authenticate_user!
-    email = request.headers["Authorization"] || params[:email]
+    token = request.headers["Authorization"]&.split(" ")&.last
 
-    if email.blank?
+    if token.blank?
       render json: { error: "인증이 필요합니다." }, status: :unauthorized
       return
     end
 
-    @current_user = User.find_by(email: email)
-
-    unless @current_user
+    begin
+      # JWT 토큰 디코딩
+      decoded = JWT.decode(token, Rails.application.credentials.secret_key_base).first
+      @current_user = User.find(decoded["user_id"])
+    rescue JWT::ExpiredSignature
+      render json: { error: "토큰이 만료되었습니다." }, status: :unauthorized
+    rescue JWT::DecodeError
+      render json: { error: "유효하지 않은 토큰입니다." }, status: :unauthorized
+    rescue ActiveRecord::RecordNotFound
       render json: { error: "유효하지 않은 사용자입니다." }, status: :unauthorized
     end
   end
