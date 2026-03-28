@@ -30,6 +30,7 @@ services:
       PORT: 8000
       DATABASE_URL: postgresql://${POSTGRES_USER:-matecheck}:${POSTGRES_PASSWORD}@matecheck-db:5432/matecheck_production
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-changeme_generate_a_real_key}
       RAILS_LOG_LEVEL: info
       RAILS_MAX_THREADS: 5
       WEB_CONCURRENCY: 2

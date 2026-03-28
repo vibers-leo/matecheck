@@ -24,6 +24,8 @@ jobs:
              git clean -fd 2>/dev/null; \
              git pull origin main && \
              cd backend && \
+             grep -q SECRET_KEY_BASE .env 2>/dev/null || echo \"SECRET_KEY_BASE=\$(openssl rand -hex 64)\" >> .env; \
+             grep -q POSTGRES_PASSWORD .env 2>/dev/null || echo \"POSTGRES_PASSWORD=matecheck_prod_pw\" >> .env; \
              docker compose -p matecheck down --remove-orphans 2>/dev/null; \
              docker rm -f matecheck-api matecheck-db 2>/dev/null; \
              docker compose -p matecheck up -d --build && \
