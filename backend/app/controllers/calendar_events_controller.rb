@@ -17,10 +17,24 @@ class CalendarEventsController < ApplicationController
     }
   end
 
+  def show
+    event = @nest.calendar_events.find(params[:id])
+    render json: event
+  end
+
   def create
     event = @nest.calendar_events.build(event_params)
     if event.save
       render json: event, status: :created
+    else
+      render json: { errors: event.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    event = @nest.calendar_events.find(params[:id])
+    if event.update(event_params)
+      render json: event
     else
       render json: { errors: event.errors.full_messages }, status: :unprocessable_entity
     end

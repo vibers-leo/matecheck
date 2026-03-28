@@ -17,6 +17,11 @@ class TransactionsController < ApplicationController
     }
   end
 
+  def show
+    transaction = @nest.transactions.find(params[:id])
+    render json: transaction
+  end
+
   def create
     transaction = @nest.transactions.build(transaction_params)
     if transaction.save
@@ -24,6 +29,21 @@ class TransactionsController < ApplicationController
     else
       render json: { errors: transaction.errors.full_messages }, status: :unprocessable_entity
     end
+  end
+
+  def update
+    transaction = @nest.transactions.find(params[:id])
+    if transaction.update(transaction_params)
+      render json: transaction
+    else
+      render json: { errors: transaction.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    transaction = @nest.transactions.find(params[:id])
+    transaction.destroy
+    head :no_content
   end
 
   private

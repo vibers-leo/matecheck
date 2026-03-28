@@ -14,6 +14,11 @@ class User < ApplicationRecord
     reset_password_token
   end
 
+  # password_digest 등 민감 정보 노출 차단
+  def as_json(options = {})
+    super(options.merge(except: Array(options[:except]) | [:password_digest, :reset_password_token]))
+  end
+
   def reset_token_valid?
     reset_password_sent_at.present? && reset_password_sent_at > 2.hours.ago
   end

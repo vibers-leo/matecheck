@@ -9,8 +9,12 @@ class SupportTicketsController < ApplicationController
     @ticket.completed = false
 
     if @ticket.save
-      # Send email asynchronously
-      SupportMailer.new_ticket_email(@ticket).deliver_later
+      # 메일 발송 실패해도 티켓은 정상 생성
+      begin
+        SupportMailer.new_ticket_email(@ticket).deliver_now
+      rescue => e
+        Rails.logger.error("메일 발송 실패: #{e.message}")
+      end
       render json: { message: 'Ticket created successfully', ticket: @ticket }, status: :created
     else
       render json: { error: @ticket.errors.full_messages }, status: :unprocessable_entity
