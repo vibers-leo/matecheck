@@ -24,9 +24,10 @@ jobs:
              git clean -fd 2>/dev/null; \
              git pull origin main && \
              cd backend && \
-             docker compose down 2>/dev/null; \
-             docker compose up -d --build && \
+             docker compose -p matecheck down --remove-orphans 2>/dev/null; \
+             docker rm -f matecheck-api matecheck-db 2>/dev/null; \
+             docker compose -p matecheck up -d --build && \
              sleep 15 && \
-             docker compose exec -T matecheck-api bundle exec rails db:migrate 2>/dev/null; \
-             docker compose ps && \
+             docker compose -p matecheck exec -T matecheck-api bundle exec rails db:migrate 2>/dev/null; \
+             docker compose -p matecheck ps && \
              echo '✅ MateCheck 배포 완료'"
