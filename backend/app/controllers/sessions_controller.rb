@@ -2,12 +2,10 @@ class SessionsController < ApplicationController
   skip_before_action :authenticate_user!, only: [:create, :refresh]
 
   def create
-    # N+1 방지: nest와 nest.users를 미리 로드
     user = User.includes(nest: :users).find_by(email: params[:email])
-    
+
     if user && user.authenticate(params[:password])
-      # JWT 토큰 생성
-      token = JWT.encode(
+      token = ::JWT.encode(
         { user_id: user.id, exp: 24.hours.from_now.to_i },
         jwt_secret_key
       )
@@ -30,17 +28,16 @@ class SessionsController < ApplicationController
     end
   end
 
-  # JWT 토큰 갱신
   def refresh
     token = request.headers['Authorization']&.split(' ')&.last
-    decoded = JWT.decode(token, jwt_secret_key).first
+    decoded = ::JWT.decode(token, jwt_secret_key).first
     user = User.find(decoded['user_id'])
-    new_token = JWT.encode(
+    new_token = ::JWT.encode(
       { user_id: user.id, exp: 24.hours.from_now.to_i },
       jwt_secret_key
     )
     render json: { token: new_token }
-  rescue JWT::DecodeError, ActiveRecord::RecordNotFound
-    render json: { error: '토큰 갱신 실패' }, status: :unauthorized
+  rescue => e
+    render json: { error: "토큰 갱신 실패" }, status: :unauthorized
   end
 end
