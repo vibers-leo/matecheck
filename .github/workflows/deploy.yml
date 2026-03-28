@@ -30,4 +30,6 @@ jobs:
              sleep 15 && \
              docker compose -p matecheck exec -T matecheck-api bundle exec rails db:migrate 2>/dev/null; \
              docker compose -p matecheck ps && \
+             sleep 10 && \
+             docker logs matecheck-api --tail 30 2>&1 && \
              echo '✅ MateCheck 배포 완료'"
