@@ -9,7 +9,7 @@ class SessionsController < ApplicationController
       # JWT 토큰 생성
       token = JWT.encode(
         { user_id: user.id, exp: 24.hours.from_now.to_i },
-        Rails.application.credentials.secret_key_base
+        jwt_secret_key
       )
 
       response_data = { message: "로그인 성공", token: token, user: user }
@@ -33,11 +33,11 @@ class SessionsController < ApplicationController
   # JWT 토큰 갱신
   def refresh
     token = request.headers['Authorization']&.split(' ')&.last
-    decoded = JWT.decode(token, Rails.application.credentials.secret_key_base).first
+    decoded = JWT.decode(token, jwt_secret_key).first
     user = User.find(decoded['user_id'])
     new_token = JWT.encode(
       { user_id: user.id, exp: 24.hours.from_now.to_i },
-      Rails.application.credentials.secret_key_base
+      jwt_secret_key
     )
     render json: { token: new_token }
   rescue JWT::DecodeError, ActiveRecord::RecordNotFound

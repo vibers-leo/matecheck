@@ -29,7 +29,7 @@ class ApplicationController < ActionController::API
 
     begin
       # JWT 토큰 디코딩
-      decoded = JWT.decode(token, Rails.application.credentials.secret_key_base).first
+      decoded = JWT.decode(token, jwt_secret_key).first
       @current_user = User.find(decoded["user_id"])
     rescue JWT::ExpiredSignature
       render json: { error: "토큰이 만료되었습니다." }, status: :unauthorized
@@ -42,5 +42,9 @@ class ApplicationController < ActionController::API
 
   def current_user
     @current_user
+  end
+
+  def jwt_secret_key
+    ENV.fetch("JWT_SECRET_KEY") { Rails.application.secret_key_base }
   end
 end
