@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Imag
 import React, { useState, useEffect } from 'react';
 // import { useUserStore, Goal } from '../../../store/userStore'; // Removed duplicate
 import { cn } from '../../../lib/utils';
-import { THEMES } from '../../../constants/data';
+import { getThemeColors } from '../../../utils/theme';
 import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { translations, Language } from '../../../constants/I18n';
@@ -27,7 +27,7 @@ const RULE_TYPES = [
 export default function RulesScreen() {
     const {
         nestTheme, goals, addGoal, incrementGoalProgress, decrementGoalProgress, deleteGoal,
-        language, nestId, rules, addRule, deleteRule, syncRules, isMaster
+        language, nestId, rules, addRule, deleteRule, syncRules, isMaster, appMode
     } = useUserStore();
     const router = useRouter();
     const params = useLocalSearchParams<{ action?: string }>();
@@ -37,8 +37,7 @@ export default function RulesScreen() {
     const tGoals = translations[language as Language].goal;
 
     // Theme Colors
-    const themeBg = THEMES[nestTheme]?.color || 'bg-orange-500';
-    const themeText = THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600';
+    const { bg: themeBg, text: themeText } = getThemeColors(nestTheme, appMode);
 
     // --- SELECTION MODAL STATE ---
     const [selectionModalVisible, setSelectionModalVisible] = useState(false);

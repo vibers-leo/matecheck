@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
 import { useUserStore, Todo } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
-import { THEMES, AVATARS } from '../../../constants/data';
+import { AVATARS } from '../../../constants/data';
+import { getThemeColors } from '../../../utils/theme';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,7 +31,7 @@ export default function PlanScreen() {
     const params = useLocalSearchParams<{ action?: string }>();
     const {
         nestTheme, events, addEvent, voteEvent, deleteEvent, avatarId,
-        todos, addTodo, toggleTodo, deleteTodo, members, language
+        todos, addTodo, toggleTodo, deleteTodo, members, language, appMode
     } = useUserStore();
 
     const t = translations[language as Language];
@@ -38,9 +39,7 @@ export default function PlanScreen() {
     const tTodo = t.todo;
     const tCommon = t.common;
 
-    const themeText = THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600';
-    const themeBg = THEMES[nestTheme]?.color || 'bg-orange-500';
-    const themeBorder = THEMES[nestTheme]?.color?.replace('bg-', 'border-') || 'border-orange-500';
+    const { bg: themeBg, text: themeText, border: themeBorder } = getThemeColors(nestTheme, appMode);
     const activeColorHex = themeBg.includes('orange') ? '#FF7F50' : '#FF7F50';
 
     // --- SELECTION MODAL STATE ---

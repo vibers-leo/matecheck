@@ -5,7 +5,8 @@ import { PieChart } from 'react-native-chart-kit';
 import { cn } from '../../../lib/utils';
 import Animated, { FadeIn, FadeInDown, SlideInUp, Layout } from 'react-native-reanimated';
 import { useUserStore, BudgetTransaction, FixedExpense } from '../../../store/userStore';
-import { THEMES, AVATARS } from '../../../constants/data';
+import { AVATARS } from '../../../constants/data';
+import { getThemeColors } from '../../../utils/theme';
 import { translations } from '../../../constants/I18n';
 import { Ionicons } from '@expo/vector-icons';
 import TutorialOverlay from '../../../components/TutorialOverlay';
@@ -22,13 +23,8 @@ export default function BudgetScreen() {
     const language = langFromStore as 'ko' | 'en';
     const t = (translations[language] as any).budget;
 
-    const isTossMode = appMode === 'roommatecheck';
-
-    // Theme logic: if Toss Mode, force Blue theme or specific Toss Colors
-    // If MateCheck, use nestTheme
-    const themeBg = isTossMode ? 'bg-toss-blue' : (THEMES[nestTheme]?.color || 'bg-orange-500');
-    const themeText = isTossMode ? 'text-toss-blue' : (THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600');
-    const themeBgSoft = isTossMode ? 'bg-blue-50' : (THEMES[nestTheme]?.bg || 'bg-orange-50');
+    // 테마 설정 (getThemeColors로 통합)
+    const { bg: themeBg, text: themeText, bgSoft: themeBgSoft, isToss: isTossMode } = getThemeColors(nestTheme, appMode);
 
     // State for Modals
     const [transModalVisible, setTransModalVisible] = useState(false);

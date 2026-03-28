@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
-import { AVATARS, THEMES, NEST_AVATARS } from '../../../constants/data';
+import { AVATARS, NEST_AVATARS } from '../../../constants/data';
+import { getThemeColors } from '../../../utils/theme';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../../constants/I18n';
@@ -43,7 +44,8 @@ export default function HomeScreen() {
     const [showMasterModal, setShowMasterModal] = useState(false);
     const tm = (translations[language] as any).master;
 
-    const isTossMode = appMode === 'roommatecheck';
+    // isTossMode는 getThemeColors()의 isToss로 대체
+    const isTossMode = isToss;
 
     useEffect(() => {
         if (isLoggedIn && hasSeenTutorial && !hasSeenMasterTutorial) {
@@ -56,9 +58,7 @@ export default function HomeScreen() {
     }, [isLoggedIn, hasSeenTutorial, hasSeenMasterTutorial]);
 
     // Theme setup
-    const themeBg = THEMES[nestTheme]?.color || 'bg-orange-500';
-    const themeText = THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600';
-    const themeItemBg = THEMES[nestTheme]?.bg || 'bg-orange-50';
+    const { bg: themeBg, text: themeText, bgSoft: themeItemBg, isToss } = getThemeColors(nestTheme, appMode);
 
     // Data Aggregation
     const incompleteTodos = todos.filter((t: any) => !t.isCompleted).slice(0, 3);
@@ -345,7 +345,7 @@ export default function HomeScreen() {
                 ]}
             />
 
-            <FloatingActionMenu themeBg={THEMES[nestTheme]?.color || 'bg-orange-500'} />
+            <FloatingActionMenu themeBg={themeBg} />
 
             <ActivityModal
                 visible={activityModalVisible}

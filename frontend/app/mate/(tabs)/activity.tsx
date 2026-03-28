@@ -2,17 +2,18 @@ import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { useUserStore, HouseRule } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
-import { THEMES, AVATARS } from '../../../constants/data';
+import { AVATARS } from '../../../constants/data';
+import { getThemeColors } from '../../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { translations, Language } from '../../../constants/I18n';
 import { useRouter } from 'expo-router';
 
 export default function ActivityScreen() {
-    const { nestTheme, todos, events, goals, members, language, nestName, nestId, rules } = useUserStore();
+    const { nestTheme, todos, events, goals, members, language, nestName, nestId, rules, appMode } = useUserStore();
     const router = useRouter();
     const t = translations[language as Language];
 
-    const themeText = THEMES[nestTheme]?.color?.replace('bg-', 'text-') || 'text-orange-600';
+    const { text: themeText } = getThemeColors(nestTheme, appMode);
 
     // Helper to format date relative time
     const formatRelativeTime = (dateString: string) => {

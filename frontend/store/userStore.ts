@@ -1,3 +1,15 @@
+// ===========================================================================
+// 마이그레이션 진행 중 — 새 코드에서는 개별 도메인 store 사용 권장:
+//
+// import { useAuthStore } from './authStore';     // 인증, 프로필, 언어, 앱모드
+// import { useNestStore } from './nestStore';      // 보금자리, 멤버, 가입요청
+// import { useTodoStore } from './todoStore';      // 미션/투두
+// import { useBudgetStore } from './budgetStore';  // 가계부, 거래내역, 고정지출
+//
+// 이 파일(useUserStore)은 기존 40+ 파일의 하위 호환을 위해 유지됩니다.
+// 새 기능 개발 시에는 위 개별 store를 직접 import하세요.
+// ===========================================================================
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
