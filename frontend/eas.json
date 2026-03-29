@@ -21,7 +21,7 @@
             "distribution": "internal",
             "env": {
                 "EXPO_PUBLIC_APP_ENV": "staging",
-                "EXPO_PUBLIC_API_URL": "http://matecheck.vibers.co.kr",
+                "EXPO_PUBLIC_API_URL": "https://matecheck.vibers.co.kr",
                 "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
                 "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "true"
             },
@@ -36,7 +36,7 @@
         "production": {
             "env": {
                 "EXPO_PUBLIC_APP_ENV": "production",
-                "EXPO_PUBLIC_API_URL_PRODUCTION": "http://matecheck.vibers.co.kr",
+                "EXPO_PUBLIC_API_URL_PRODUCTION": "https://matecheck.vibers.co.kr",
                 "EXPO_PUBLIC_ENABLE_ANALYTICS": "true",
                 "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "true"
             },

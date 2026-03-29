@@ -2,27 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Supanova Design System (NativeWind) */
-@layer base {
-  * {
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-  }
-}
-
 @layer components {
-  /* ── Supanova 모바일 카드 ── */
   .card-mobile {
-    @apply bg-white rounded-3xl p-5;
-    box-shadow: 0 2px 12px -4px rgba(0, 0, 0, 0.06);
+    @apply bg-white rounded-3xl p-5 shadow-md;
   }
 
   .card-mobile-sm {
-    @apply bg-white rounded-2xl p-4;
-    box-shadow: 0 1px 8px -2px rgba(0, 0, 0, 0.05);
+    @apply bg-white rounded-2xl p-4 shadow-sm;
   }
 
-  /* ── Supanova 프리미엄 카드 (double-bezel → 단일 카드) ── */
   .card-premium {
     @apply p-1.5 rounded-3xl bg-black/[0.03];
   }
@@ -31,7 +19,6 @@
     @apply bg-white rounded-[22px] p-6;
   }
 
-  /* ── Supanova 텍스트 스타일 ── */
   .eyebrow {
     @apply text-[11px] uppercase tracking-[0.15em] font-medium;
   }
@@ -44,7 +31,6 @@
     @apply text-xs text-gray-400;
   }
 
-  /* ── Supanova 버튼 ── */
   .btn-primary {
     @apply flex items-center justify-center rounded-full py-4 px-8 font-semibold;
   }

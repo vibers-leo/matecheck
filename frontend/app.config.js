@@ -65,6 +65,7 @@ export default {
       'expo-router',
       'expo-font',
       'expo-secure-store',
+      'expo-asset',
       [
         'expo-build-properties',
         {
@@ -80,7 +81,7 @@ export default {
     ],
     extra: {
       eas: {
-        projectId: '5b232716-3c32-4694-92a6-54d5762b0098',
+        projectId: '82208c75-3db6-4496-918a-f6a8cf70d82a',
       },
       // 환경 변수를 extra에 명시적으로 전달 (선택 사항)
       // EXPO_PUBLIC_ 접두사가 있으면 자동으로 클라이언트에서 접근 가능
