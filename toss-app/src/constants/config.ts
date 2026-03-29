@@ -32,6 +32,16 @@ export const COLORS = {
   red: '#F04452',
   green: '#2FC473',
   yellow: '#FFC043',
+
+  // 배경 색상
+  pageBg: '#F4F5F7',
+} as const;
+
+// 공통 스타일 상수
+export const CARD_STYLE = {
+  backgroundColor: COLORS.white,
+  borderRadius: 16,
+  padding: 20,
 } as const;
 
 // API 설정

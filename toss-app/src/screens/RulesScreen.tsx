@@ -1,5 +1,5 @@
 // RulesScreen.tsx — 규칙 관리
-// 규칙 목록 + 추가
+// 카드 기반 UI: 번호 뱃지 + 카드 안 리스트 + 하단 추가 버튼
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -10,10 +10,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { Button } from '@toss/tds-react-native';
 import Txt from '@toss/tds-react-native/dist/esm/components/txt/Txt';
-import { COLORS } from '../constants/config';
+import { COLORS, CARD_STYLE } from '../constants/config';
 import { useNestStore } from '../store/nestStore';
 import api from '../services/api';
 
@@ -75,13 +76,13 @@ export default function RulesScreen() {
         },
       });
       setRules((prev) => [
+        ...prev,
         {
           id: String(data.id),
           title: data.title,
           description: data.description || '',
           createdAt: data.created_at,
         },
-        ...prev,
       ]);
       setNewTitle('');
       setNewDesc('');
@@ -111,14 +112,18 @@ export default function RulesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadRules} />}
       >
         {/* 헤더 */}
         <View style={styles.header}>
-          <Txt typography="t4" fontWeight="bold" color={COLORS.gray900}>
+          <Txt typography="t5" fontWeight="bold" color={COLORS.gray900}>
             우리의 규칙
           </Txt>
           <Txt typography="t6" color={COLORS.gray500}>
@@ -126,7 +131,61 @@ export default function RulesScreen() {
           </Txt>
         </View>
 
-        {/* 규칙 추가 */}
+        {/* 규칙 카드 */}
+        {rules.length > 0 ? (
+          <View style={styles.rulesCard}>
+            {rules.map((rule, index) => (
+              <TouchableOpacity
+                key={rule.id}
+                style={[
+                  styles.ruleRow,
+                  index < rules.length - 1 && styles.ruleRowBorder,
+                ]}
+                onLongPress={() => handleDelete(rule.id, rule.title)}
+                activeOpacity={0.6}
+              >
+                {/* 번호 뱃지 */}
+                <View style={styles.ruleNumber}>
+                  <Txt typography="t6" fontWeight="bold" color={COLORS.tossBLue}>
+                    {index + 1}
+                  </Txt>
+                </View>
+
+                {/* 규칙 내용 */}
+                <View style={styles.ruleContent}>
+                  <Txt typography="t5" fontWeight="bold" color={COLORS.gray800}>
+                    {rule.title}
+                  </Txt>
+                  {rule.description ? (
+                    <Txt typography="t6" color={COLORS.gray500}>
+                      {rule.description}
+                    </Txt>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          !isLoading && (
+            <View style={styles.emptyCard}>
+              <Txt typography="t2">📋</Txt>
+              <View style={styles.spacer12} />
+              <Txt typography="t5" color={COLORS.gray400}>
+                아직 규칙이 없어요
+              </Txt>
+              <View style={styles.spacer4} />
+              <Txt typography="t6" color={COLORS.gray300}>
+                함께 지킬 규칙을 만들어보세요
+              </Txt>
+            </View>
+          )
+        )}
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      {/* 하단 고정: 추가 버튼 / 입력 폼 */}
+      <View style={styles.bottomArea}>
         {isAdding ? (
           <View style={styles.addForm}>
             <TextInput
@@ -145,133 +204,167 @@ export default function RulesScreen() {
               onChangeText={setNewDesc}
               multiline
             />
-            <View style={styles.addButtons}>
-              <Button size="medium" type="light" onPress={() => setIsAdding(false)}>
-                취소
-              </Button>
-              <Button size="medium" type="primary" onPress={handleAddRule}>
-                추가
-              </Button>
+            <View style={styles.addFormButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setIsAdding(false);
+                  setNewTitle('');
+                  setNewDesc('');
+                }}
+              >
+                <Txt typography="t6" color={COLORS.gray500}>
+                  취소
+                </Txt>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  !newTitle.trim() && styles.saveButtonDisabled,
+                ]}
+                onPress={handleAddRule}
+                disabled={!newTitle.trim()}
+              >
+                <Txt typography="t6" fontWeight="bold" color={COLORS.white}>
+                  저장
+                </Txt>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAdding(true)}>
-            <Txt typography="t6" color={COLORS.tossBLue}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setIsAdding(true)}
+            activeOpacity={0.8}
+          >
+            <Txt typography="t5" fontWeight="bold" color={COLORS.white}>
               + 규칙 추가
             </Txt>
           </TouchableOpacity>
         )}
-
-        {/* 규칙 목록 */}
-        {rules.map((rule, index) => (
-          <TouchableOpacity
-            key={rule.id}
-            style={styles.ruleRow}
-            onLongPress={() => handleDelete(rule.id, rule.title)}
-          >
-            <View style={styles.ruleNumber}>
-              <Txt typography="t6" fontWeight="bold" color={COLORS.tossBLue}>
-                {index + 1}
-              </Txt>
-            </View>
-            <View style={styles.ruleContent}>
-              <Txt typography="t5" fontWeight="bold" color={COLORS.gray800}>
-                {rule.title}
-              </Txt>
-              {rule.description ? (
-                <Txt typography="t6" color={COLORS.gray500}>
-                  {rule.description}
-                </Txt>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* 빈 상태 */}
-        {rules.length === 0 && !isLoading && (
-          <View style={styles.emptyState}>
-            <Txt typography="t5" color={COLORS.gray400}>
-              아직 규칙이 없어요
-            </Txt>
-            <View style={{ height: 4 }} />
-            <Txt typography="t6" color={COLORS.gray300}>
-              함께 지킬 규칙을 만들어보세요
-            </Txt>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.pageBg,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 24,
+    marginBottom: 16,
   },
-  addButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.gray100,
-  },
-  addForm: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.gray100,
-    gap: 8,
-  },
-  input: {
-    fontSize: 16,
-    color: COLORS.gray900,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.tossBLue,
-  },
-  descInput: {
-    minHeight: 40,
-  },
-  addButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 4,
+  rulesCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
+    padding: 0,
+    overflow: 'hidden',
   },
   ruleRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    minHeight: 60,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
+    gap: 14,
+  },
+  ruleRowBorder: {
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.gray100,
   },
   ruleNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.tossBlueLight,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
   ruleContent: {
     flex: 1,
     gap: 4,
   },
-  emptyState: {
-    paddingVertical: 48,
+  emptyCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
     alignItems: 'center',
+    paddingVertical: 48,
+  },
+  spacer12: {
+    height: 12,
+  },
+  spacer4: {
+    height: 4,
+  },
+  bottomSpacer: {
+    height: 20,
+  },
+  bottomArea: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 12,
+    backgroundColor: COLORS.pageBg,
+    borderTopWidth: 0.5,
+    borderTopColor: COLORS.gray200,
+  },
+  addButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: COLORS.tossBLue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addForm: {
+    gap: 10,
+  },
+  input: {
+    fontSize: 16,
+    color: COLORS.gray900,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+  },
+  descInput: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  addFormButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  cancelButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.gray100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.tossBLue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.gray300,
   },
 });

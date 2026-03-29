@@ -66,7 +66,6 @@ function MainTabs() {
   const handleExitConfirm = useCallback(() => {
     setExitModalVisible(false);
     // TODO: 토스 앱으로 돌아가기 (AppsInToss.exit() 등)
-    // 현재는 로그아웃 처리
     logout();
   }, [logout]);
 
@@ -89,22 +88,23 @@ function MainTabs() {
           tabBarInactiveTintColor: COLORS.gray400,
           tabBarStyle: {
             backgroundColor: COLORS.white,
-            borderTopColor: COLORS.gray200,
+            borderTopColor: COLORS.gray100,
             borderTopWidth: 0.5,
-            height: 56,
-            paddingBottom: 4,
-            paddingTop: 4,
+            height: 60,
+            paddingBottom: 6,
+            paddingTop: 6,
           },
-          tabBarLabel: ({ focused, color }) => (
+          tabBarLabel: ({ focused }) => (
             <Txt
               typography="t7"
+              fontWeight={focused ? 'bold' : undefined}
               color={focused ? COLORS.tossBLue : COLORS.gray400}
             >
               {TAB_CONFIG[route.name as keyof TabParamList].label}
             </Txt>
           ),
           tabBarIcon: ({ focused }) => (
-            <Txt typography="t6">
+            <Txt typography="t5" style={{ opacity: focused ? 1 : 0.6 }}>
               {TAB_CONFIG[route.name as keyof TabParamList].icon}
             </Txt>
           ),

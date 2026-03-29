@@ -1,13 +1,15 @@
 // IntroScreen.tsx — 서비스 소개 (토스 로그인 전)
-// 인트로 → 로그인 → 메인 흐름의 첫 번째 화면
+// 풀페이지 인트로: 큰 이모지 + 핵심 설명 + 하단 고정 CTA
 
 import React, { useState } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@toss/tds-react-native';
 import Txt from '@toss/tds-react-native/dist/esm/components/txt/Txt';
 import { COLORS } from '../constants/config';
 import { useAuthStore } from '../store/authStore';
+
+const { width } = Dimensions.get('window');
 
 interface IntroScreenProps {
   navigation: any;
@@ -22,7 +24,6 @@ export default function IntroScreen({ navigation }: IntroScreenProps) {
     setIsLoading(true);
     try {
       // TODO: 실제 토스 프로필 API 연동 후 교체
-      // 현재는 테스트용 더미 데이터로 로그인
       const success = await loginWithToss('toss_user_001', '토스유저');
       if (success) {
         navigation.replace('Main');
@@ -37,47 +38,65 @@ export default function IntroScreen({ navigation }: IntroScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* 로고 영역 */}
-        <View style={styles.logoArea}>
-          <View style={styles.iconCircle}>
-            <Txt typography="t1" color={COLORS.white}>
+        {/* 상단 여백 + 로고 영역 */}
+        <View style={styles.heroArea}>
+          <View style={styles.emojiContainer}>
+            <Txt typography="t1" style={styles.heroEmoji}>
               🏠
             </Txt>
           </View>
-        </View>
 
-        {/* 서비스 소개 */}
-        <View style={styles.textArea}>
+          <View style={styles.spacer24} />
+
           <Txt typography="t2" fontWeight="bold" color={COLORS.gray900} textAlign="center">
-            룸메이트체크
+            함께 사는 공간,{'\n'}함께 관리해요
           </Txt>
+
           <View style={styles.spacer16} />
-          <Txt typography="t5" color={COLORS.gray600} textAlign="center">
-            함께 사는 공간, 함께 관리해요
-          </Txt>
-          <View style={styles.spacer8} />
-          <Txt typography="t6" color={COLORS.gray500} textAlign="center">
-            할 일, 가계부, 규칙을 한 곳에서 관리하고{'\n'}
-            투명한 공동 생활을 시작하세요
-          </Txt>
-          <View style={styles.spacer8} />
-          <Txt typography="t6" color={COLORS.gray500} textAlign="center">
-            룸메이트, 커플, 가족 모두 사용할 수 있어요
+
+          <Txt typography="t5" color={COLORS.gray500} textAlign="center">
+            할 일, 가계부, 규칙을 한 곳에서
           </Txt>
         </View>
 
-        {/* 시작하기 버튼 */}
-        <View style={styles.buttonArea}>
-          <Button
-            display="block"
-            size="big"
-            type="primary"
-            onPress={handleStart}
-            loading={isLoading}
-          >
-            시작하기
-          </Button>
+        {/* 기능 하이라이트 카드 */}
+        <View style={styles.featureArea}>
+          <View style={styles.featureRow}>
+            <View style={styles.featureItem}>
+              <Txt typography="t4">✅</Txt>
+              <Txt typography="t6" color={COLORS.gray700}>할 일 관리</Txt>
+            </View>
+            <View style={styles.featureItem}>
+              <Txt typography="t4">💰</Txt>
+              <Txt typography="t6" color={COLORS.gray700}>공동 가계부</Txt>
+            </View>
+            <View style={styles.featureItem}>
+              <Txt typography="t4">📋</Txt>
+              <Txt typography="t6" color={COLORS.gray700}>생활 규칙</Txt>
+            </View>
+          </View>
+
+          <View style={styles.spacer16} />
+
+          <View style={styles.targetBadge}>
+            <Txt typography="t7" color={COLORS.gray500}>
+              룸메이트 · 커플 · 가족 모두 사용할 수 있어요
+            </Txt>
+          </View>
         </View>
+      </View>
+
+      {/* 하단 고정 CTA 버튼 */}
+      <View style={styles.bottomArea}>
+        <Button
+          display="block"
+          size="big"
+          type="primary"
+          onPress={handleStart}
+          loading={isLoading}
+        >
+          시작하기
+        </Button>
       </View>
     </SafeAreaView>
   );
@@ -90,32 +109,51 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    justifyContent: 'center',
   },
-  logoArea: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.tossBLue,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textArea: {
+  heroArea: {
     alignItems: 'center',
     marginBottom: 48,
+  },
+  emojiContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: COLORS.tossBlueLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroEmoji: {
+    fontSize: 44,
+  },
+  spacer24: {
+    height: 24,
   },
   spacer16: {
     height: 16,
   },
-  spacer8: {
-    height: 8,
+  featureArea: {
+    alignItems: 'center',
   },
-  buttonArea: {
-    paddingHorizontal: 8,
+  featureRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  featureItem: {
+    alignItems: 'center',
+    gap: 8,
+    width: 80,
+  },
+  targetBadge: {
+    backgroundColor: COLORS.gray50,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  bottomArea: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
   },
 });

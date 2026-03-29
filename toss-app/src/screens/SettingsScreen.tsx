@@ -1,11 +1,10 @@
 // SettingsScreen.tsx — 설정
-// 프로필 + 로그아웃
+// 카드 기반 UI: 프로필 카드 + 메뉴 그룹 + 로그아웃
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Button } from '@toss/tds-react-native';
 import Txt from '@toss/tds-react-native/dist/esm/components/txt/Txt';
-import { COLORS, APP_NAME } from '../constants/config';
+import { COLORS, CARD_STYLE, APP_NAME } from '../constants/config';
 import { useAuthStore } from '../store/authStore';
 import { useNestStore } from '../store/nestStore';
 
@@ -32,19 +31,67 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
     ]);
   };
 
-  // 초대 코드 복사 (Clipboard API가 없으므로 Alert으로 대체)
+  // 초대 코드 보기
   const handleCopyInviteCode = () => {
     if (inviteCode) {
       Alert.alert('초대 코드', `초대 코드: ${inviteCode}\n\n이 코드를 룸메이트에게 공유하세요!`);
     }
   };
 
+  // 메뉴 아이템 렌더러
+  const MenuItem = ({
+    emoji,
+    label,
+    value,
+    onPress,
+    showChevron = true,
+    isLast = false,
+  }: {
+    emoji: string;
+    label: string;
+    value?: string;
+    onPress?: () => void;
+    showChevron?: boolean;
+    isLast?: boolean;
+  }) => (
+    <TouchableOpacity
+      style={[styles.menuItem, !isLast && styles.menuItemBorder]}
+      onPress={onPress}
+      activeOpacity={onPress ? 0.6 : 1}
+      disabled={!onPress}
+    >
+      <View style={styles.menuLeft}>
+        <View style={styles.menuIconContainer}>
+          <Txt typography="t5">{emoji}</Txt>
+        </View>
+        <Txt typography="t5" color={COLORS.gray800}>
+          {label}
+        </Txt>
+      </View>
+      <View style={styles.menuRight}>
+        {value && (
+          <Txt typography="t6" color={COLORS.gray500}>
+            {value}
+          </Txt>
+        )}
+        {showChevron && (
+          <Txt typography="t6" color={COLORS.gray300}>
+            &gt;
+          </Txt>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
       {/* 프로필 카드 */}
       <View style={styles.profileCard}>
         <View style={styles.avatarCircle}>
-          <Txt typography="t2" color={COLORS.white}>
+          <Txt typography="t2" fontWeight="bold" color={COLORS.white}>
             {nickname ? nickname.charAt(0) : '?'}
           </Txt>
         </View>
@@ -58,74 +105,78 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
         </View>
       </View>
 
-      {/* 보금자리 정보 */}
-      <View style={styles.section}>
-        <Txt typography="t6" fontWeight="bold" color={COLORS.gray400}>
+      {/* 보금자리 정보 그룹 */}
+      <View style={styles.sectionLabel}>
+        <Txt typography="t7" fontWeight="bold" color={COLORS.gray400}>
           보금자리 정보
         </Txt>
-        <View style={styles.spacer12} />
-
-        <View style={styles.infoRow}>
-          <Txt typography="t6" color={COLORS.gray600}>
-            보금자리 이름
-          </Txt>
-          <Txt typography="t6" color={COLORS.gray900}>
-            {nestName || '없음'}
-          </Txt>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Txt typography="t6" color={COLORS.gray600}>
-            멤버 수
-          </Txt>
-          <Txt typography="t6" color={COLORS.gray900}>
-            {members.length}명
-          </Txt>
-        </View>
-
+      </View>
+      <View style={styles.menuCard}>
+        <MenuItem
+          emoji="🏠"
+          label="보금자리 이름"
+          value={nestName || '없음'}
+          showChevron={false}
+        />
+        <MenuItem
+          emoji="👥"
+          label="멤버 수"
+          value={`${members.length}명`}
+          showChevron={false}
+        />
         {inviteCode && (
-          <TouchableOpacity style={styles.infoRow} onPress={handleCopyInviteCode}>
-            <Txt typography="t6" color={COLORS.gray600}>
-              초대 코드
-            </Txt>
-            <Txt typography="t6" color={COLORS.tossBLue}>
-              {inviteCode} (탭하여 보기)
-            </Txt>
-          </TouchableOpacity>
+          <MenuItem
+            emoji="🔑"
+            label="초대 코드"
+            value={inviteCode}
+            onPress={handleCopyInviteCode}
+            isLast
+          />
+        )}
+        {!inviteCode && (
+          <MenuItem
+            emoji="🔑"
+            label="초대 코드"
+            value="없음"
+            showChevron={false}
+            isLast
+          />
         )}
       </View>
 
-      {/* 앱 정보 */}
-      <View style={styles.section}>
-        <Txt typography="t6" fontWeight="bold" color={COLORS.gray400}>
+      {/* 앱 정보 그룹 */}
+      <View style={styles.sectionLabel}>
+        <Txt typography="t7" fontWeight="bold" color={COLORS.gray400}>
           앱 정보
         </Txt>
-        <View style={styles.spacer12} />
-
-        <View style={styles.infoRow}>
-          <Txt typography="t6" color={COLORS.gray600}>
-            버전
-          </Txt>
-          <Txt typography="t6" color={COLORS.gray900}>
-            1.0.0
-          </Txt>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Txt typography="t6" color={COLORS.gray600}>
-            제작
-          </Txt>
-          <Txt typography="t6" color={COLORS.gray900}>
-            계발자들 (Vibers)
-          </Txt>
-        </View>
+      </View>
+      <View style={styles.menuCard}>
+        <MenuItem
+          emoji="📱"
+          label="버전"
+          value="1.0.0"
+          showChevron={false}
+        />
+        <MenuItem
+          emoji="👨‍💻"
+          label="제작"
+          value="계발자들 (Vibers)"
+          showChevron={false}
+          isLast
+        />
       </View>
 
       {/* 로그아웃 */}
-      <View style={styles.logoutSection}>
-        <Button display="block" size="big" type="light" onPress={handleLogout}>
-          로그아웃
-        </Button>
+      <View style={styles.logoutArea}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Txt typography="t5" fontWeight="bold" color={COLORS.red}>
+            로그아웃
+          </Txt>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -134,15 +185,19 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.pageBg,
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 40,
   },
   profileCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
     gap: 16,
-    borderBottomWidth: 8,
-    borderBottomColor: COLORS.gray50,
+    marginBottom: 24,
   },
   avatarCircle: {
     width: 56,
@@ -154,26 +209,61 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
-  section: {
-    padding: 20,
-    borderBottomWidth: 8,
-    borderBottomColor: COLORS.gray50,
+  sectionLabel: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  spacer12: {
-    height: 12,
+  menuCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
+    padding: 0,
+    overflow: 'hidden',
+    marginBottom: 8,
   },
-  infoRow: {
+  menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  menuItemBorder: {
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.gray100,
   },
-  logoutSection: {
-    padding: 20,
-    paddingTop: 32,
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: COLORS.gray50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  logoutArea: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  logoutButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
   },
 });

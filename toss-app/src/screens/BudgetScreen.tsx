@@ -1,7 +1,7 @@
 // BudgetScreen.tsx — 가계부
-// 거래 목록 + 추가
+// 카드 기반 UI: 이번 달 총 지출 카드 + 일별 거래 목록 + 하단 추가 버튼
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,10 +10,11 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { Button } from '@toss/tds-react-native';
 import Txt from '@toss/tds-react-native/dist/esm/components/txt/Txt';
-import { COLORS } from '../constants/config';
+import { COLORS, CARD_STYLE } from '../constants/config';
 import { useNestStore } from '../store/nestStore';
 import api from '../services/api';
 
@@ -26,6 +27,19 @@ interface Transaction {
   paidBy: string;
   createdAt: string;
 }
+
+// 카테고리별 이모지 매핑
+const CATEGORY_EMOJI: Record<string, string> = {
+  '식비': '🍚',
+  '교통': '🚌',
+  '생활': '🏠',
+  '공과금': '💡',
+  '통신': '📱',
+  '문화': '🎬',
+  '의료': '🏥',
+  '쇼핑': '🛍️',
+  '기타': '📦',
+};
 
 export default function BudgetScreen() {
   const { nestId } = useNestStore();
@@ -99,30 +113,135 @@ export default function BudgetScreen() {
   };
 
   // 총 지출 계산
-  const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = useMemo(
+    () => transactions.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0),
+    [transactions]
+  );
 
   // 금액 포맷
   const formatAmount = (amount: number) => {
     return amount.toLocaleString('ko-KR') + '원';
   };
 
+  // 날짜별 그룹핑
+  const groupedTransactions = useMemo(() => {
+    const groups: Record<string, Transaction[]> = {};
+    transactions.forEach((tx) => {
+      const dateKey = tx.createdAt ? tx.createdAt.split('T')[0] : '날짜 없음';
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(tx);
+    });
+    return Object.entries(groups);
+  }, [transactions]);
+
+  // 날짜 포맷
+  const formatDate = (dateStr: string) => {
+    if (dateStr === '날짜 없음') return dateStr;
+    try {
+      const date = new Date(dateStr);
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      const weekday = weekdays[date.getDay()];
+      return `${month}월 ${day}일 (${weekday})`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadTransactions} />}
       >
-        {/* 총 지출 */}
+        {/* 상단 총 지출 카드 */}
         <View style={styles.totalCard}>
           <Txt typography="t6" color={COLORS.gray500}>
             이번 달 총 지출
           </Txt>
-          <Txt typography="t2" fontWeight="bold" color={COLORS.gray900}>
-            {formatAmount(totalAmount)}
+          <View style={styles.spacer8} />
+          <Txt typography="t1" fontWeight="bold" color={COLORS.gray900}>
+            {formatAmount(totalExpense)}
           </Txt>
         </View>
 
-        {/* 거래 추가 */}
+        {/* 날짜별 거래 목록 */}
+        {groupedTransactions.length > 0 ? (
+          groupedTransactions.map(([date, txList]) => (
+            <View key={date}>
+              {/* 날짜 구분선 */}
+              <View style={styles.dateDivider}>
+                <Txt typography="t7" fontWeight="bold" color={COLORS.gray400}>
+                  {formatDate(date)}
+                </Txt>
+              </View>
+
+              {/* 거래 카드 */}
+              <View style={styles.txCard}>
+                {txList.map((tx, index) => (
+                  <View
+                    key={tx.id}
+                    style={[
+                      styles.txRow,
+                      index < txList.length - 1 && styles.txRowBorder,
+                    ]}
+                  >
+                    {/* 카테고리 이모지 */}
+                    <View style={styles.txIconContainer}>
+                      <Txt typography="t4">
+                        {CATEGORY_EMOJI[tx.category] || '📦'}
+                      </Txt>
+                    </View>
+
+                    {/* 내용 */}
+                    <View style={styles.txContent}>
+                      <Txt typography="t5" color={COLORS.gray800}>
+                        {tx.title}
+                      </Txt>
+                      <Txt typography="t7" color={COLORS.gray400}>
+                        {tx.paidBy ? `${tx.paidBy} · ` : ''}{tx.category}
+                      </Txt>
+                    </View>
+
+                    {/* 금액 (지출은 빨간색, 수입은 파란색) */}
+                    <Txt
+                      typography="t5"
+                      fontWeight="bold"
+                      color={tx.amount >= 0 ? COLORS.red : COLORS.tossBLue}
+                    >
+                      {tx.amount >= 0 ? '-' : '+'}{formatAmount(Math.abs(tx.amount))}
+                    </Txt>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))
+        ) : (
+          !isLoading && (
+            <View style={styles.emptyCard}>
+              <Txt typography="t2">💳</Txt>
+              <View style={styles.spacer12} />
+              <Txt typography="t5" color={COLORS.gray400}>
+                아직 거래 내역이 없어요
+              </Txt>
+              <View style={styles.spacer4} />
+              <Txt typography="t6" color={COLORS.gray300}>
+                공과금, 생활비 등을 기록해보세요
+              </Txt>
+            </View>
+          )
+        )}
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      {/* 하단 고정: 추가 버튼 / 입력 폼 */}
+      <View style={styles.bottomArea}>
         {isAdding ? (
           <View style={styles.addForm}>
             <TextInput
@@ -140,115 +259,171 @@ export default function BudgetScreen() {
               value={newAmount}
               onChangeText={setNewAmount}
               keyboardType="numeric"
+              returnKeyType="done"
             />
-            <View style={styles.addButtons}>
-              <Button size="medium" type="light" onPress={() => setIsAdding(false)}>
-                취소
-              </Button>
-              <Button size="medium" type="primary" onPress={handleAddTransaction}>
-                추가
-              </Button>
+            <View style={styles.addFormButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setIsAdding(false);
+                  setNewTitle('');
+                  setNewAmount('');
+                }}
+              >
+                <Txt typography="t6" color={COLORS.gray500}>
+                  취소
+                </Txt>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  (!newTitle.trim() || !newAmount.trim()) && styles.saveButtonDisabled,
+                ]}
+                onPress={handleAddTransaction}
+                disabled={!newTitle.trim() || !newAmount.trim()}
+              >
+                <Txt typography="t6" fontWeight="bold" color={COLORS.white}>
+                  저장
+                </Txt>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAdding(true)}>
-            <Txt typography="t6" color={COLORS.tossBLue}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setIsAdding(true)}
+            activeOpacity={0.8}
+          >
+            <Txt typography="t5" fontWeight="bold" color={COLORS.white}>
               + 거래 추가
             </Txt>
           </TouchableOpacity>
         )}
-
-        {/* 거래 목록 */}
-        {transactions.map((tx) => (
-          <View key={tx.id} style={styles.transactionRow}>
-            <View style={styles.txLeft}>
-              <Txt typography="t6" color={COLORS.gray800}>
-                {tx.title}
-              </Txt>
-              <Txt typography="t7" color={COLORS.gray400}>
-                {tx.paidBy ? `${tx.paidBy} · ` : ''}
-                {tx.category}
-              </Txt>
-            </View>
-            <Txt typography="t5" fontWeight="bold" color={COLORS.gray900}>
-              {formatAmount(tx.amount)}
-            </Txt>
-          </View>
-        ))}
-
-        {/* 빈 상태 */}
-        {transactions.length === 0 && !isLoading && (
-          <View style={styles.emptyState}>
-            <Txt typography="t5" color={COLORS.gray400}>
-              아직 거래 내역이 없어요
-            </Txt>
-            <View style={{ height: 4 }} />
-            <Txt typography="t6" color={COLORS.gray300}>
-              공과금, 생활비 등을 기록해보세요
-            </Txt>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.pageBg,
   },
   scrollView: {
     flex: 1,
   },
-  totalCard: {
-    margin: 20,
-    padding: 20,
-    backgroundColor: COLORS.gray50,
-    borderRadius: 16,
-    gap: 4,
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 100,
   },
-  addButton: {
+  totalCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    paddingVertical: 24,
+  },
+  spacer12: {
+    height: 12,
+  },
+  spacer8: {
+    height: 8,
+  },
+  spacer4: {
+    height: 4,
+  },
+  dateDivider: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  txCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 60,
     paddingHorizontal: 20,
     paddingVertical: 14,
+    gap: 14,
+  },
+  txRowBorder: {
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.gray100,
   },
-  addForm: {
+  txIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.gray50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  txContent: {
+    flex: 1,
+    gap: 2,
+  },
+  emptyCard: {
+    ...CARD_STYLE,
+    marginHorizontal: 20,
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  bottomSpacer: {
+    height: 20,
+  },
+  bottomArea: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.gray100,
-    gap: 8,
+    paddingBottom: 20,
+    paddingTop: 12,
+    backgroundColor: COLORS.pageBg,
+    borderTopWidth: 0.5,
+    borderTopColor: COLORS.gray200,
+  },
+  addButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: COLORS.tossBLue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addForm: {
+    gap: 10,
   },
   input: {
     fontSize: 16,
     color: COLORS.gray900,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.tossBLue,
-  },
-  addButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 4,
-  },
-  transactionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.gray100,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
   },
-  txLeft: {
+  addFormButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  cancelButton: {
     flex: 1,
-    gap: 2,
-  },
-  emptyState: {
-    paddingVertical: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.gray100,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.tossBLue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.gray300,
   },
 });
