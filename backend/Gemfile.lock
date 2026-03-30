@@ -132,6 +132,7 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.18.0)
+    jwt (2.10.1)
     kamal (2.10.1)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -369,6 +370,7 @@ DEPENDENCIES
   dockerfile-rails (>= 1.7)
   httparty (~> 0.24.2)
   image_processing (~> 1.2)
+  jwt
   kamal
   nokogiri (~> 1.19)
   pg
