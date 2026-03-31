@@ -212,15 +212,51 @@ export const api = {
 };
 
 /**
- * 인증 토큰 관리 (JWT 구현 시 사용)
+ * 인증 토큰 관리 — SecureStore 기반
+ * 앱 시작 시 SecureStore에서 토큰을 불러오고, 로그인/로그아웃 시 업데이트
  */
+import * as SecureStore from 'expo-secure-store';
+
+const TOKEN_KEY = 'matecheck_jwt_token';
 let authToken: string | null = null;
 
-export const setAuthToken = (token: string | null) => {
+/** SecureStore에서 토큰 로드 (앱 시작 시 호출) */
+export const loadToken = async (): Promise<string | null> => {
+  try {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    authToken = token;
+    return token;
+  } catch (error) {
+    console.error('토큰 로드 실패:', error);
+    return null;
+  }
+};
+
+/** 토큰 저장 (로그인/회원가입 성공 시 호출) */
+export const setAuthToken = async (token: string | null) => {
   authToken = token;
+  try {
+    if (token) {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    } else {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+  } catch (error) {
+    console.error('토큰 저장 실패:', error);
+  }
 };
 
 export const getAuthToken = () => authToken;
+
+/** 토큰 삭제 (로그아웃 시 호출) */
+export const clearToken = async () => {
+  authToken = null;
+  try {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  } catch (error) {
+    console.error('토큰 삭제 실패:', error);
+  }
+};
 
 /**
  * 인증이 필요한 API 클라이언트

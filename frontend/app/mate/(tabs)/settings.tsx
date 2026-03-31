@@ -10,6 +10,7 @@ import Avatar from '../../../components/Avatar';
 import * as Clipboard from 'expo-clipboard';
 import TutorialOverlay from '../../../components/TutorialOverlay';
 import { Dimensions } from 'react-native';
+import { clearAuthData } from '../../../utils/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -17,7 +18,8 @@ export default function SettingsScreen() {
     const {
         nickname, avatarId, nestName, logout, members, nestId, inviteCode,
         pendingRequests, fetchJoinRequests, approveJoinRequest,
-        language, setLanguage, isMaster, appMode, setAppMode
+        language, setLanguage, isMaster, appMode, setAppMode,
+        syncMembers, isLoading
     } = useUserStore();
     const router = useRouter();
     const t = (translations[language as keyof typeof translations] as any).settings;
@@ -28,6 +30,7 @@ export default function SettingsScreen() {
     useEffect(() => {
         if (nestId) {
             fetchJoinRequests();
+            syncMembers(); // 최신 멤버 정보 동기화
             if (!inviteCode) {
                 const randomCode = 'MC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
                 setLocalInviteCode(randomCode);
@@ -46,8 +49,9 @@ export default function SettingsScreen() {
                 {
                     text: t.logout,
                     style: "destructive",
-                    onPress: () => {
-                        logout();
+                    onPress: async () => {
+                        await clearAuthData(); // SecureStore 토큰 삭제
+                        logout(); // 스토어 상태 초기화
                         router.replace('/');
                     }
                 }

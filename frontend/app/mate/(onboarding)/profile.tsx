@@ -1,8 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
 import { API_URL } from '../../../constants/Config';
+import { getAuthToken } from '../../../services/api';
 import { cn } from '../../../lib/utils';
 import { AVATARS } from '../../../constants/data';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -35,16 +36,25 @@ export default function ProfileScreen() {
 
     const [nickname, setLocalNickname] = useState('');
     const [selectedAvatarId, setSelectedAvatarId] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleNext = async () => {
         if (!nickname.trim()) return;
 
+        setIsLoading(true);
         try {
+            // Authorization 헤더 포함
+            const token = getAuthToken();
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const response = await fetch(`${API_URL}/profile`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     email: userEmail,
                     user: {
@@ -60,11 +70,13 @@ export default function ProfileScreen() {
                 setProfile(nickname, selectedAvatarId, String(data.id));
                 router.push('/(onboarding)/nest_choice');
             } else {
-                Alert.alert("오류", data.error || "문제가 발생했습니다.");
+                Alert.alert("오류", data.error || "프로필 설정에 실패했습니다.");
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("오류", "서버 연결에 실패했습니다.");
+            console.error('프로필 설정 오류:', error);
+            Alert.alert("네트워크 오류", "서버 연결에 실패했습니다.\n네트워크 연결을 확인해주세요.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -86,6 +98,7 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                         onPress={() => setSelectedAvatarId((selectedAvatarId + 1) % AVATARS.length)}
                         className="relative"
+                        disabled={isLoading}
                     >
                         <Avatar
                             source={(AVATARS[selectedAvatarId] || AVATARS[0]).image}
@@ -109,22 +122,34 @@ export default function ProfileScreen() {
                     placeholderTextColor="#D1D5DB"
                     className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                     autoFocus
+                    editable={!isLoading}
+                    maxLength={20}
                 />
+                {nickname.length > 0 && (
+                    <Text className="text-xs text-gray-400 mt-1 ml-1">{nickname.length}/20자</Text>
+                )}
             </Animated.View>
 
             {/* 하단 고정 CTA */}
             <View className="flex-1 justify-end pb-10">
                 <TouchableOpacity
                     onPress={handleNext}
-                    disabled={!nickname.trim()}
+                    disabled={!nickname.trim() || isLoading}
                     className={cn(
                         "btn-primary w-full",
-                        nickname.trim() ? "bg-primary" : "bg-gray-100"
+                        nickname.trim() && !isLoading ? "bg-primary" : "bg-gray-100"
                     )}
                 >
-                    <Text className={cn("font-semibold text-base", nickname.trim() ? "text-white" : "text-gray-400")}>
-                        {t.next_button}
-                    </Text>
+                    {isLoading ? (
+                        <View className="flex-row items-center gap-2">
+                            <ActivityIndicator size="small" color="white" />
+                            <Text className="text-white font-semibold text-base">저장 중...</Text>
+                        </View>
+                    ) : (
+                        <Text className={cn("font-semibold text-base", nickname.trim() ? "text-white" : "text-gray-400")}>
+                            {t.next_button}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>

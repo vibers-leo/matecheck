@@ -201,6 +201,7 @@ interface UserState {
 
     // Budget Actions
     addTransaction: (title: string, amount: number, category: BudgetTransaction['category'], date?: string) => Promise<void>;
+    deleteTransaction: (id: string) => Promise<void>;
     setBudgetGoal: (amount: number) => void;
     addFixedExpense: (title: string, amount: number, day: number) => void;
     deleteFixedExpense: (id: string) => void;
@@ -342,21 +343,25 @@ export const useUserStore = create<UserState>()(
             setAppMode: (mode) => set({ appMode: mode }),
             setNestType: (type: 'dormitory' | 'couple' | 'family') => set({ nestType: type }),
 
-            logout: () => set({
-                nickname: '', avatarId: 0, userEmail: '', nestName: '', nestTheme: 0, nestId: '', inviteCode: '', isLoggedIn: false,
-                todos: [],
-                events: [],
-                transactions: [],
-                fixedExpenses: [],
-                goals: [],
-                pendingRequests: [],
-                members: [],
-                rules: [],
-                anniversaries: [],
-                nestType: null,
-                language: 'ko',
-                hasSeenTutorial: false
-            }),
+            logout: () => {
+                // SecureStore에서 JWT 토큰 삭제
+                import('../services/api').then(({ clearToken }) => clearToken());
+                set({
+                    nickname: '', avatarId: 0, userEmail: '', nestName: '', nestTheme: 0, nestId: '', inviteCode: '', isLoggedIn: false,
+                    todos: [],
+                    events: [],
+                    transactions: [],
+                    fixedExpenses: [],
+                    goals: [],
+                    pendingRequests: [],
+                    members: [],
+                    rules: [],
+                    anniversaries: [],
+                    nestType: null,
+                    language: 'ko',
+                    hasSeenTutorial: false
+                });
+            },
             addMember: (nickname, avatarId) => set((state: UserState) => ({
                 members: [...state.members, { id: Math.random().toString(36).substr(2, 9), nickname, avatarId }]
             })),
@@ -699,6 +704,26 @@ export const useUserStore = create<UserState>()(
                             ...state.transactions
                         ]
                     }));
+                }
+            },
+
+            deleteTransaction: async (id) => {
+                const { nestId } = useUserStore.getState();
+                if (nestId) {
+                    try {
+                        await api.delete(`/nests/${nestId}/transactions/${id}`);
+                        set((state: UserState) => ({
+                            transactions: state.transactions.filter(t => t.id !== id)
+                        }));
+                        showSuccessToast('거래 내역이 삭제되었습니다.');
+                    } catch (error) {
+                        console.error('거래 내역 삭제 실패:', error);
+                    }
+                } else {
+                    set((state: UserState) => ({
+                        transactions: state.transactions.filter(t => t.id !== id)
+                    }));
+                    showSuccessToast('거래 내역이 삭제되었습니다.');
                 }
             },
 

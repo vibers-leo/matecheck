@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Linking, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Dimensions, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Linking, Image, ActivityIndicator, Alert } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
@@ -16,9 +16,10 @@ const { width, height } = Dimensions.get('window');
 
 export default function BudgetScreen() {
     const {
-        nestTheme, budgetGoal, transactions, addTransaction,
+        nestTheme, budgetGoal, transactions, addTransaction, deleteTransaction,
         fixedExpenses, setBudgetGoal, addFixedExpense, deleteFixedExpense,
-        avatarId, language: langFromStore, appMode
+        avatarId, language: langFromStore, appMode,
+        nestId, syncTransactions, isLoading
     } = useUserStore();
     const language = langFromStore as 'ko' | 'en';
     const t = (translations[language] as any).budget;
@@ -37,6 +38,7 @@ export default function BudgetScreen() {
     const [tempAmount, setTempAmount] = useState('');
     const [tempGoal, setTempGoal] = useState(budgetGoal.toString());
     const [tempDay, setTempDay] = useState('1');
+    const [tempCategory, setTempCategory] = useState<BudgetTransaction['category']>('etc');
 
     // --- STEP-BY-STEP UI STATE ---
     const [transStep, setTransStep] = useState(1);
@@ -48,6 +50,13 @@ export default function BudgetScreen() {
 
     const appState = useRef(AppState.currentState);
     const [transferPending, setTransferPending] = useState(false);
+
+    // 화면 진입 시 거래 내역 API 로딩
+    useEffect(() => {
+        if (nestId) {
+            syncTransactions();
+        }
+    }, [nestId]);
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
@@ -63,6 +72,12 @@ export default function BudgetScreen() {
             subscription.remove();
         };
     }, [transferPending]);
+
+    // 카테고리 이모지 매핑
+    const getCategoryEmoji = (cat: string) => {
+        const map: Record<string, string> = { food: '🍽️', housing: '🏠', living: '🛒', transport: '🚗', etc: '📦' };
+        return map[cat] || '📦';
+    };
 
     // Calculations
     const totalSpent = transactions.reduce((acc: number, curr: BudgetTransaction) => acc + curr.amount, 0);
@@ -90,8 +105,8 @@ export default function BudgetScreen() {
 
     const handleAddTransaction = () => {
         if (!tempTitle || !tempAmount) return;
-        addTransaction(tempTitle, parseInt(tempAmount), 'etc');
-        setTempTitle(''); setTempAmount(''); setTransModalVisible(false);
+        addTransaction(tempTitle, parseInt(tempAmount), tempCategory);
+        setTempTitle(''); setTempAmount(''); setTempCategory('etc'); setTransModalVisible(false);
     };
 
     const handleSetGoal = () => {
@@ -147,6 +162,16 @@ export default function BudgetScreen() {
                     )}
                 </View>
             </View>
+
+            {/* 로딩 상태 */}
+            {isLoading.transactions && (
+                <View className="absolute top-28 left-0 right-0 z-10 items-center">
+                    <View className="bg-white/90 px-4 py-2 rounded-full flex-row items-center gap-2" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }}>
+                        <ActivityIndicator size="small" color="#6366F1" />
+                        <Text className="text-xs text-gray-500 font-medium">{language === 'ko' ? '거래 내역 불러오는 중...' : 'Loading transactions...'}</Text>
+                    </View>
+                </View>
+            )}
 
             <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>
                 <View className="gap-4">
@@ -308,19 +333,34 @@ export default function BudgetScreen() {
                                         className={cn("flex-row justify-between items-center py-4 px-5", i !== Math.min(transactions.length, 10) - 1 && "border-b border-gray-100")}
                                     >
                                         <View className="flex-row items-center gap-3">
-                                            <Avatar
-                                                source={(AVATARS[Number(t.payerId)] || AVATARS[0]).image}
-                                                size="sm"
-                                                className="bg-gray-50"
-                                            />
+                                            <View className="w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+                                                <Text className="text-lg">{getCategoryEmoji(t.category)}</Text>
+                                            </View>
                                             <View>
                                                 <Text className="font-bold text-gray-900 text-base">{t.title}</Text>
                                                 <Text className="text-gray-400 text-xs mt-0.5">
-                                                    {t.date} · {(AVATARS[Number(t.payerId)] || AVATARS[0]).label}
+                                                    {t.date}
                                                 </Text>
                                             </View>
                                         </View>
-                                        <Text className="font-bold text-red-500 text-base">-{t.amount.toLocaleString()}</Text>
+                                        <View className="flex-row items-center gap-2">
+                                            <Text className="font-bold text-red-500 text-base">-{t.amount.toLocaleString()}</Text>
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    Alert.alert(
+                                                        language === 'ko' ? '삭제' : 'Delete',
+                                                        language === 'ko' ? '이 거래 내역을 삭제하시겠습니까?' : 'Delete this transaction?',
+                                                        [
+                                                            { text: language === 'ko' ? '취소' : 'Cancel', style: 'cancel' },
+                                                            { text: language === 'ko' ? '삭제' : 'Delete', style: 'destructive', onPress: () => deleteTransaction(t.id) }
+                                                        ]
+                                                    );
+                                                }}
+                                                className="p-1"
+                                            >
+                                                <Ionicons name="trash-outline" size={14} color="#D1D5DB" />
+                                            </TouchableOpacity>
+                                        </View>
                                     </Animated.View>
                                 ))
                             )}
@@ -552,7 +592,29 @@ export default function BudgetScreen() {
                                             className="bg-gray-50 border-2 border-indigo-100 rounded-2xl p-6 text-gray-900 font-black text-3xl mb-4"
                                             autoFocus
                                         />
-                                        <Text className="text-gray-400 font-bold text-center">정확한 금액을 입력하면 투명하게 공유됩니다 ✨</Text>
+                                        <Text className="text-sm font-black text-gray-900 mb-3 ml-1 mt-4">카테고리</Text>
+                                        <View className="flex-row flex-wrap gap-2">
+                                            {([
+                                                { key: 'food' as const, emoji: '🍽️', label: '식비' },
+                                                { key: 'housing' as const, emoji: '🏠', label: '주거' },
+                                                { key: 'living' as const, emoji: '🛒', label: '생활' },
+                                                { key: 'transport' as const, emoji: '🚗', label: '교통' },
+                                                { key: 'etc' as const, emoji: '📦', label: '기타' },
+                                            ]).map((cat) => (
+                                                <TouchableOpacity
+                                                    key={cat.key}
+                                                    onPress={() => setTempCategory(cat.key)}
+                                                    className={cn(
+                                                        "px-4 py-2.5 rounded-xl border-2",
+                                                        tempCategory === cat.key ? themeBg + " border-transparent" : "bg-gray-50 border-gray-100"
+                                                    )}
+                                                >
+                                                    <Text className={cn("font-bold text-sm", tempCategory === cat.key ? "text-white" : "text-gray-500")}>
+                                                        {cat.emoji} {cat.label}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
                                     </View>
                                 )}
                             </View>

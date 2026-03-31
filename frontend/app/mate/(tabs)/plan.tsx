@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, Modal, TextInput, ScrollView, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, LocaleConfig, DateData } from 'react-native-calendars';
 import { useUserStore, Todo } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
@@ -12,7 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { translations, Language } from '../../../constants/I18n';
 import Avatar from '../../../components/Avatar';
 import TutorialOverlay from '../../../components/TutorialOverlay';
-import { Dimensions } from 'react-native';
+import { Dimensions, ActivityIndicator } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +31,8 @@ export default function PlanScreen() {
     const params = useLocalSearchParams<{ action?: string }>();
     const {
         nestTheme, events, addEvent, voteEvent, deleteEvent, avatarId,
-        todos, addTodo, toggleTodo, deleteTodo, members, language, appMode
+        todos, addTodo, toggleTodo, deleteTodo, members, language, appMode,
+        nestId, syncMissions, syncEvents, isLoading
     } = useUserStore();
 
     const t = translations[language as Language];
@@ -70,6 +71,14 @@ export default function PlanScreen() {
     // --- STEP-BY-STEP UI STATE ---
     const [calStep, setCalStep] = useState(1);
     const [todoStep, setTodoStep] = useState(1);
+
+    // 화면 진입 시 API 데이터 로딩
+    useEffect(() => {
+        if (nestId) {
+            syncMissions();
+            syncEvents();
+        }
+    }, [nestId]);
 
     // Handle Deep Linking / Params
     React.useEffect(() => {
@@ -219,6 +228,16 @@ export default function PlanScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* 로딩 상태 */}
+            {(isLoading.todos || isLoading.events) && (
+                <View className="absolute top-28 left-0 right-0 z-10 items-center">
+                    <View className="bg-white/90 px-4 py-2 rounded-full flex-row items-center gap-2" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }}>
+                        <ActivityIndicator size="small" color="#6366F1" />
+                        <Text className="text-xs text-gray-500 font-medium">{language === 'ko' ? '데이터 불러오는 중...' : 'Loading...'}</Text>
+                    </View>
+                </View>
+            )}
 
             {/* 메인 스크롤 */}
             <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>

@@ -1,20 +1,25 @@
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter, Link } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
 import { API_URL } from '../../../constants/Config';
+import { setAuthToken } from '../../../services/api';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 export default function SignupScreen() {
     const router = useRouter();
-    const { setEmail: setStoreEmail } = useUserStore();
+    const { setEmail: setStoreEmail, setProfile } = useUserStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const passwordRef = useRef<TextInput>(null);
+    const confirmRef = useRef<TextInput>(null);
 
     const validateEmail = (email: string) => {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,19 +68,40 @@ export default function SignupScreen() {
             const data = await response.json();
 
             if (response.ok) {
+                // JWT 토큰 SecureStore에 저장
+                if (data.token) {
+                    await setAuthToken(data.token);
+                }
+
                 setStoreEmail(email);
+
+                // 유저 정보가 있으면 프로필에 반영
+                if (data.user) {
+                    setProfile(
+                        data.user.nickname || email.split('@')[0],
+                        data.user.avatar_id || 0,
+                        String(data.user.id)
+                    );
+                }
+
                 // 프로필 설정을 먼저 진행한 후 nest_choice로 이동
                 router.push('/(onboarding)/profile');
             } else {
-                if (data.errors) {
-                    setErrorMessage(data.errors.join('\n'));
+                if (response.status === 422 && data.errors) {
+                    // Rails validation 에러 (배열 형태)
+                    const errorList = Array.isArray(data.errors)
+                        ? data.errors.join('\n')
+                        : typeof data.errors === 'object'
+                            ? Object.values(data.errors).flat().join('\n')
+                            : String(data.errors);
+                    setErrorMessage(errorList);
                 } else {
-                    setErrorMessage('회원가입에 실패했습니다. 다시 시도해주세요.');
+                    setErrorMessage(data.error || '회원가입에 실패했습니다. 다시 시도해주세요.');
                 }
             }
         } catch (error) {
-            console.error(error);
-            setErrorMessage('서버와 통신 중 문제가 발생했습니다. 네트워크 연결을 확인해주세요.');
+            console.error('회원가입 오류:', error);
+            setErrorMessage('서버와 통신 중 문제가 발생했습니다.\n네트워크 연결을 확인해주세요.');
         } finally {
             setIsLoading(false);
         }
@@ -115,10 +141,10 @@ export default function SignupScreen() {
                 <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} className="w-full gap-4">
                     {/* 에러 메시지 */}
                     {errorMessage ? (
-                        <View className="bg-red-50 rounded-2xl p-4 flex-row items-start">
+                        <Animated.View entering={FadeInDown.duration(300)} className="bg-red-50 rounded-2xl p-4 flex-row items-start">
                             <Ionicons name="alert-circle" size={18} color="#EF4444" style={{ marginTop: 2 }} />
-                            <Text className="text-red-500 ml-2 flex-1 text-sm">{errorMessage}</Text>
-                        </View>
+                            <Text className="text-red-500 ml-2 flex-1 text-sm leading-5">{errorMessage}</Text>
+                        </Animated.View>
                     ) : null}
 
                     {/* 이메일 입력 */}
@@ -135,42 +161,103 @@ export default function SignupScreen() {
                             className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
                             keyboardType="email-address"
                             autoCapitalize="none"
+                            autoComplete="email"
                             editable={!isLoading}
+                            returnKeyType="next"
+                            onSubmitEditing={() => passwordRef.current?.focus()}
                         />
                     </View>
 
                     {/* 비밀번호 입력 */}
                     <View>
                         <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">비밀번호</Text>
-                        <TextInput
-                            value={password}
-                            onChangeText={(text) => {
-                                setPassword(text);
-                                setErrorMessage('');
-                            }}
-                            placeholder="영문, 숫자 포함 8자리 이상"
-                            placeholderTextColor="#D1D5DB"
-                            className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
-                            secureTextEntry
-                            editable={!isLoading}
-                        />
+                        <View className="relative">
+                            <TextInput
+                                ref={passwordRef}
+                                value={password}
+                                onChangeText={(text) => {
+                                    setPassword(text);
+                                    setErrorMessage('');
+                                }}
+                                placeholder="영문, 숫자 포함 8자리 이상"
+                                placeholderTextColor="#D1D5DB"
+                                className="w-full bg-gray-50 rounded-2xl p-4 pr-12 text-gray-900 text-body"
+                                secureTextEntry={!showPassword}
+                                editable={!isLoading}
+                                returnKeyType="next"
+                                onSubmitEditing={() => confirmRef.current?.focus()}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-4"
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons
+                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color="#9CA3AF"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        {/* 비밀번호 강도 표시 */}
+                        {password.length > 0 && (
+                            <View className="flex-row items-center gap-2 mt-2 ml-1">
+                                <View className="flex-row gap-1 flex-1">
+                                    <View className={`h-1 flex-1 rounded-full ${password.length >= 8 ? 'bg-green-400' : 'bg-red-300'}`} />
+                                    <View className={`h-1 flex-1 rounded-full ${password.length >= 10 ? 'bg-green-400' : 'bg-gray-200'}`} />
+                                    <View className={`h-1 flex-1 rounded-full ${password.length >= 12 && /[!@#$%^&*]/.test(password) ? 'bg-green-400' : 'bg-gray-200'}`} />
+                                </View>
+                                <Text className={`text-xs ${password.length >= 8 ? 'text-green-500' : 'text-red-400'}`}>
+                                    {password.length < 8 ? `${password.length}/8자` : '사용 가능'}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     {/* 비밀번호 확인 입력 */}
                     <View>
                         <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">비밀번호 확인</Text>
-                        <TextInput
-                            value={confirmPassword}
-                            onChangeText={(text) => {
-                                setConfirmPassword(text);
-                                setErrorMessage('');
-                            }}
-                            placeholder="비밀번호 다시 입력"
-                            placeholderTextColor="#D1D5DB"
-                            className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body"
-                            secureTextEntry
-                            editable={!isLoading}
-                        />
+                        <View className="relative">
+                            <TextInput
+                                ref={confirmRef}
+                                value={confirmPassword}
+                                onChangeText={(text) => {
+                                    setConfirmPassword(text);
+                                    setErrorMessage('');
+                                }}
+                                placeholder="비밀번호 다시 입력"
+                                placeholderTextColor="#D1D5DB"
+                                className="w-full bg-gray-50 rounded-2xl p-4 pr-12 text-gray-900 text-body"
+                                secureTextEntry={!showConfirmPassword}
+                                editable={!isLoading}
+                                returnKeyType="go"
+                                onSubmitEditing={handleSignup}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-4 top-4"
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons
+                                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color="#9CA3AF"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        {/* 비밀번호 일치 표시 */}
+                        {confirmPassword.length > 0 && (
+                            <View className="flex-row items-center gap-1 mt-2 ml-1">
+                                <Ionicons
+                                    name={password === confirmPassword ? "checkmark-circle" : "close-circle"}
+                                    size={14}
+                                    color={password === confirmPassword ? "#22C55E" : "#EF4444"}
+                                />
+                                <Text className={`text-xs ${password === confirmPassword ? 'text-green-500' : 'text-red-400'}`}>
+                                    {password === confirmPassword ? '비밀번호 일치' : '비밀번호 불일치'}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </Animated.View>
 
@@ -181,9 +268,14 @@ export default function SignupScreen() {
                         disabled={isLoading}
                         className={`btn-primary w-full ${isLoading ? 'bg-primary-light' : 'bg-primary active:opacity-90'}`}
                     >
-                        <Text className="text-white font-semibold text-base">
-                            {isLoading ? '가입 중...' : '가입하고 시작하기'}
-                        </Text>
+                        {isLoading ? (
+                            <View className="flex-row items-center gap-2">
+                                <View className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <Text className="text-white font-semibold text-base">가입 중...</Text>
+                            </View>
+                        ) : (
+                            <Text className="text-white font-semibold text-base">가입하고 시작하기</Text>
+                        )}
                     </TouchableOpacity>
 
                     {/* 로그인 링크 */}

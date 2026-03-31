@@ -1,16 +1,16 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-// import { useUserStore } from '../../../store/userStore'; // Removed duplicate
 import { API_URL } from '../../../constants/Config';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { translations, Language } from '../../../constants/I18n';
+import { cn } from '../../../lib/utils';
 
 // Anniversary interface is now imported from store
 import { useUserStore } from '../../../store/userStore';
 
 export default function AnniversaryScreen() {
-    const { nestId, language, anniversaries, addAnniversary, deleteAnniversary, syncAnniversaries } = useUserStore();
+    const { nestId, language, anniversaries, addAnniversary, deleteAnniversary, syncAnniversaries, isLoading } = useUserStore();
     const t = translations[language as Language].anniversary;
 
     // Local UI state
@@ -100,6 +100,16 @@ export default function AnniversaryScreen() {
             <View className="pt-14 pb-5 px-5 bg-white z-20 flex-row justify-between items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12 }}>
                 <Text className="text-xl font-bold tracking-tight text-gray-900">{t.title}</Text>
             </View>
+
+            {/* 로딩 상태 */}
+            {isLoading.anniversaries && (
+                <View className="absolute top-28 left-0 right-0 z-10 items-center">
+                    <View className="bg-white/90 px-4 py-2 rounded-full flex-row items-center gap-2" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }}>
+                        <ActivityIndicator size="small" color="#F97316" />
+                        <Text className="text-xs text-gray-500 font-medium">{language === 'ko' ? '기념일 불러오는 중...' : 'Loading anniversaries...'}</Text>
+                    </View>
+                </View>
+            )}
 
             {/* 기념일 목록 */}
             <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>

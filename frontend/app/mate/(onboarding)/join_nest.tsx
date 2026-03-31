@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
@@ -6,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../../../constants/Config';
+import { getAuthToken } from '../../../services/api';
 import { translations } from '../../../constants/I18n';
 import { AVATARS } from '../../../constants/data';
 import AvatarPicker from '../../../components/AvatarPicker';
@@ -35,15 +36,26 @@ export default function JoinNestScreen() {
     const params = useLocalSearchParams();
     const [inviteCode, setInviteCode] = useState(typeof params.code === 'string' ? params.code : '');
     const [isWaiting, setIsWaiting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [pickerVisible, setPickerVisible] = useState(false);
 
     const handleJoinRequest = async () => {
         if (!inviteCode.trim()) return;
 
+        setIsLoading(true);
         try {
+            // Authorization 헤더 포함
+            const token = getAuthToken();
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const response = await fetch(`${API_URL}/nests/join`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     email: userEmail,
                     invite_code: inviteCode,
@@ -59,11 +71,19 @@ export default function JoinNestScreen() {
             if (response.ok) {
                 setIsWaiting(true);
             } else {
-                Alert.alert("오류", data.error || "잘못된 초대코드입니다.");
+                if (response.status === 404) {
+                    Alert.alert("오류", "존재하지 않는 초대코드입니다.\n코드를 다시 확인해주세요.");
+                } else if (response.status === 409) {
+                    Alert.alert("알림", data.error || "이미 가입 요청을 보냈습니다.");
+                } else {
+                    Alert.alert("오류", data.error || "잘못된 초대코드입니다.");
+                }
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert("오류", "서버 연결에 실패했습니다.");
+            console.error('참여 요청 오류:', error);
+            Alert.alert("네트워크 오류", "서버 연결에 실패했습니다.\n네트워크 연결을 확인해주세요.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -78,9 +98,18 @@ export default function JoinNestScreen() {
                     <Text className="text-heading-1 text-gray-900 tracking-tight text-center mb-3">
                         {t.waiting_title}
                     </Text>
-                    <Text className="text-body text-gray-400 text-center leading-relaxed mb-10">
+                    <Text className="text-body text-gray-400 text-center leading-relaxed mb-4">
                         {t.waiting_desc}
                     </Text>
+                    {/* 안내 카드 */}
+                    <View className="bg-orange-50 p-4 rounded-2xl mb-10 w-full flex-row items-center gap-3">
+                        <View className="w-9 h-9 bg-white rounded-full items-center justify-center">
+                            <Ionicons name="time-outline" size={20} color="#FF7F50" />
+                        </View>
+                        <Text className="flex-1 text-orange-700 text-xs font-medium leading-5">
+                            방장이 승인하면 자동으로 보금자리에 참여됩니다. 잠시만 기다려주세요!
+                        </Text>
+                    </View>
                     <TouchableOpacity
                         onPress={() => router.replace('/')}
                         className="btn-primary w-full bg-gray-900"
@@ -110,6 +139,7 @@ export default function JoinNestScreen() {
                     <TouchableOpacity
                         onPress={() => setPickerVisible(true)}
                         className="items-center relative"
+                        disabled={isLoading}
                     >
                         <Image
                             source={(AVATARS[avatarId] || AVATARS[0]).image}
@@ -136,8 +166,11 @@ export default function JoinNestScreen() {
                     onChangeText={(text) => setInviteCode(text.toUpperCase())}
                     placeholder={t.invite_code_placeholder}
                     placeholderTextColor="#D1D5DB"
-                    className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body mb-2"
+                    className="w-full bg-gray-50 rounded-2xl p-4 text-gray-900 text-body mb-2 tracking-widest text-center text-lg font-bold"
                     autoFocus
+                    editable={!isLoading}
+                    autoCapitalize="characters"
+                    maxLength={8}
                 />
                 <Text className="caption ml-1">
                     {t.invite_hint}
@@ -148,15 +181,22 @@ export default function JoinNestScreen() {
             <View className="flex-1 justify-end pb-10">
                 <TouchableOpacity
                     onPress={handleJoinRequest}
-                    disabled={!inviteCode.trim()}
+                    disabled={!inviteCode.trim() || isLoading}
                     className={cn(
                         "btn-primary w-full",
-                        inviteCode.trim() ? "bg-primary" : "bg-gray-100"
+                        inviteCode.trim() && !isLoading ? "bg-primary" : "bg-gray-100"
                     )}
                 >
-                    <Text className={cn("font-semibold text-base", inviteCode.trim() ? "text-white" : "text-gray-400")}>
-                        {t.join_request_btn}
-                    </Text>
+                    {isLoading ? (
+                        <View className="flex-row items-center gap-2">
+                            <ActivityIndicator size="small" color="white" />
+                            <Text className="text-white font-semibold text-base">참여 요청 중...</Text>
+                        </View>
+                    ) : (
+                        <Text className={cn("font-semibold text-base", inviteCode.trim() ? "text-white" : "text-gray-400")}>
+                            {t.join_request_btn}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>

@@ -3,6 +3,7 @@ import { View, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '../../../store/userStore';
 import React, { useEffect } from 'react';
+import * as Haptics from 'expo-haptics';
 
 export default function TabLayout() {
     const { isLoggedIn, language, appMode, nestType } = useUserStore();
@@ -50,6 +51,11 @@ export default function TabLayout() {
                     fontWeight: '600',
                     marginTop: 4,
                 }
+            }}
+            screenListeners={{
+                tabPress: () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                },
             }}
         >
             <Tabs.Screen

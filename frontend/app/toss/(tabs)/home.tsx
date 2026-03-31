@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Platform, Modal, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useUserStore } from '../../../store/userStore';
@@ -79,7 +80,13 @@ export default function HomeScreen() {
                 {/* Toss Style Premium Header */}
                 <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
                     <View style={styles.headerTop}>
-                        <View style={styles.nestInfo}>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                // router.push('/nest_management') // Assuming this exists or just for haptic
+                            }}
+                            style={styles.nestInfo}
+                        >
                             <View style={styles.nestIconBox}>
                                 <Image
                                     source={(NEST_AVATARS.find((a: any) => a.id === nestAvatarId) || NEST_AVATARS[0]).image}
@@ -89,10 +96,13 @@ export default function HomeScreen() {
                             </View>
                             <Text style={styles.nestName}>{nestName}</Text>
                             <Ionicons name="chevron-forward" size={18} color={TDS_COLORS.grey400} />
-                        </View>
+                        </TouchableOpacity>
 
                         <TouchableOpacity
-                            onPress={() => setActivityModalVisible(true)}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setActivityModalVisible(true);
+                            }}
                             style={styles.notifButton}
                         >
                             <Ionicons name="notifications" size={24} color={TDS_COLORS.grey400} />
@@ -101,7 +111,13 @@ export default function HomeScreen() {
                     </View>
 
                     {/* Member Avatars Pill */}
-                    <TouchableOpacity style={styles.memberPill}>
+                    <TouchableOpacity 
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            router.push('/member_management');
+                        }}
+                        style={styles.memberPill}
+                    >
                         <View style={styles.avatarStack}>
                             {members.slice(0, 3).map((m: any, i: number) => (
                                 <Avatar
@@ -267,7 +283,10 @@ export default function HomeScreen() {
                     <AnimatedTouchableOpacity
                         entering={FadeInUp.delay(700).duration(600)}
                         style={styles.banner}
-                        onPress={() => router.push('/life_info')}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            router.push('/life_info');
+                        }}
                     >
                         <View style={{ flex: 1 }}>
                             <Text style={styles.bannerSubtitle}>룸메이트 맞춤 꿀팁 ✨</Text>

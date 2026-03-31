@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 // import { useUserStore, Goal } from '../../../store/userStore'; // Removed duplicate
 import { cn } from '../../../lib/utils';
@@ -27,7 +27,7 @@ const RULE_TYPES = [
 export default function RulesScreen() {
     const {
         nestTheme, goals, addGoal, incrementGoalProgress, decrementGoalProgress, deleteGoal,
-        language, nestId, rules, addRule, deleteRule, syncRules, isMaster, appMode
+        language, nestId, rules, addRule, deleteRule, syncRules, syncGoals, isMaster, appMode, isLoading
     } = useUserStore();
     const router = useRouter();
     const params = useLocalSearchParams<{ action?: string }>();
@@ -60,10 +60,11 @@ export default function RulesScreen() {
     const [ruleStep, setRuleStep] = useState(1);
     const [goalStep, setGoalStep] = useState(1);
 
-    // Fetch Rules & Handle Deep Linking
+    // 화면 진입 시 규칙 + 목표 API 로딩
     useEffect(() => {
         if (nestId) {
             syncRules();
+            syncGoals();
         }
     }, [nestId]);
 
@@ -247,6 +248,16 @@ export default function RulesScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* 로딩 상태 */}
+            {(isLoading.rules || isLoading.goals) && (
+                <View className="absolute top-28 left-0 right-0 z-10 items-center">
+                    <View className="bg-white/90 px-4 py-2 rounded-full flex-row items-center gap-2" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }}>
+                        <ActivityIndicator size="small" color="#6366F1" />
+                        <Text className="text-xs text-gray-500 font-medium">{language === 'ko' ? '데이터 불러오는 중...' : 'Loading...'}</Text>
+                    </View>
+                </View>
+            )}
 
             {/* 메인 콘텐츠 */}
             <ScrollView className="flex-1 px-5" contentContainerStyle={{ paddingBottom: 120, paddingTop: 16 }} showsVerticalScrollIndicator={false}>

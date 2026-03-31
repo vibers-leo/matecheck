@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
-import React from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
 import { useUserStore, HouseRule } from '../../../store/userStore';
 import { cn } from '../../../lib/utils';
 import { AVATARS } from '../../../constants/data';
@@ -10,11 +10,25 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 export default function ActivityScreen() {
-    const { nestTheme, todos, events, goals, members, language, nestName, nestId, rules, appMode } = useUserStore();
+    const {
+        nestTheme, todos, events, goals, members, language, nestName, nestId, rules, appMode,
+        syncMissions, syncEvents, syncGoals, syncRules, syncTransactions, transactions, isLoading
+    } = useUserStore();
     const router = useRouter();
     const t = translations[language as Language];
 
     const { text: themeText } = getThemeColors(nestTheme, appMode);
+
+    // 화면 진입 시 모든 데이터 동기화 (활동 로그는 여러 데이터를 조합)
+    useEffect(() => {
+        if (nestId) {
+            syncMissions();
+            syncEvents();
+            syncGoals();
+            syncRules();
+            syncTransactions();
+        }
+    }, [nestId]);
 
     // 상대 시간 포맷 헬퍼
     const formatRelativeTime = (dateString: string) => {
@@ -143,12 +157,27 @@ export default function ActivityScreen() {
         iconBg: '#FEF2F2',
     }));
 
+    // 거래 내역 로그 (최근 지출/수입)
+    const transactionLogs = transactions.slice(0, 10).map(tx => ({
+        id: `tx-${tx.id}`,
+        type: 'transaction',
+        title: tx.title,
+        user: members.find(m => m.id === tx.payerId) || members[0],
+        date: tx.date || today,
+        message: language === 'ko' ? `${tx.amount.toLocaleString()}원 지출` : `Spent ${tx.amount.toLocaleString()}`,
+        targetPath: '/(tabs)/budget',
+        icon: 'card' as const,
+        iconColor: '#F59E0B',
+        iconBg: '#FFFBEB',
+    }));
+
     // 모든 로그 병합 및 정렬
     const activities = [
         ...completedTodosLogs,
         ...createdEventsLogs,
         ...goalLogs,
         ...ruleLogs,
+        ...transactionLogs,
         ...memberJoinLogs,
         nestCreationLog
     ].sort((a, b) => b.date.localeCompare(a.date));
@@ -229,6 +258,16 @@ export default function ActivityScreen() {
                     {language === 'ko' ? "활동 기록" : "Activity Log"}
                 </Text>
             </View>
+
+            {/* 로딩 상태 */}
+            {(isLoading.todos || isLoading.events || isLoading.goals || isLoading.rules || isLoading.transactions) && (
+                <View className="items-center py-3">
+                    <View className="bg-white/90 px-4 py-2 rounded-full flex-row items-center gap-2" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }}>
+                        <ActivityIndicator size="small" color="#6366F1" />
+                        <Text className="text-xs text-gray-500 font-medium">{language === 'ko' ? '활동 불러오는 중...' : 'Loading activities...'}</Text>
+                    </View>
+                </View>
+            )}
 
             <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 {activities.length === 0 ? (
