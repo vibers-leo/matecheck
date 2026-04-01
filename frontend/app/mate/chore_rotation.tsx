@@ -2,12 +2,12 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Keyb
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useUserStore } from '../../store/userStore';
-import { API_URL } from '../../constants/Config';
 import { AVATARS } from '../../constants/data';
 import { cn } from '../../lib/utils';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import Avatar from '../../components/Avatar';
+import { apiFetch } from "../../lib/api";
 
 interface ChoreRotation {
     id: number;
@@ -52,12 +52,10 @@ export default function ChoreRotationScreen() {
 
     const fetchRotations = async () => {
         try {
-            const response = await fetch(`${API_URL}/nests/${nestId}/chore_rotations`);
-            if (response.ok) {
-                const json = await response.json();
-                const data = Array.isArray(json) ? json : (json.data || []);
-                setRotations(data);
-            }
+            // 표준화된 apiFetch 사용 (JWT 자동 포함)
+            const data = await apiFetch<any>(`/nests/${nestId}/chore_rotations`);
+            const rotationsData = Array.isArray(data) ? data : (data.data || []);
+            setRotations(rotationsData);
         } catch (error) {
             console.error(error);
         }
@@ -70,9 +68,8 @@ export default function ChoreRotationScreen() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/nests/${nestId}/chore_rotations`, {
+            await apiFetch(`/nests/${nestId}/chore_rotations`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chore_rotation: {
                         chore_name: choreName,
@@ -81,11 +78,9 @@ export default function ChoreRotationScreen() {
                 })
             });
 
-            if (response.ok) {
-                fetchRotations();
-                resetForm();
-                setModalVisible(false);
-            }
+            fetchRotations();
+            resetForm();
+            setModalVisible(false);
         } catch (error) {
             console.error(error);
             Alert.alert('오류', '로테이션 추가에 실패했습니다.');
@@ -94,14 +89,11 @@ export default function ChoreRotationScreen() {
 
     const rotateChore = async (id: number) => {
         try {
-            const response = await fetch(`${API_URL}/nests/${nestId}/chore_rotations/${id}/rotate`, {
+            await apiFetch(`/nests/${nestId}/chore_rotations/${id}/rotate`, {
                 method: 'POST'
             });
-
-            if (response.ok) {
-                fetchRotations();
-                Alert.alert('완료!', '다음 담당자로 변경되었습니다.');
-            }
+            fetchRotations();
+            Alert.alert('완료!', '다음 담당자로 변경되었습니다.');
         } catch (error) {
             console.error(error);
         }
@@ -113,13 +105,10 @@ export default function ChoreRotationScreen() {
 
     const deleteRotation = async (id: number) => {
         try {
-            const response = await fetch(`${API_URL}/nests/${nestId}/chore_rotations/${id}`, {
+            await apiFetch(`/nests/${nestId}/chore_rotations/${id}`, {
                 method: 'DELETE'
             });
-
-            if (response.ok) {
-                setRotations(rotations.filter(r => r.id !== id));
-            }
+            setRotations(rotations.filter(r => r.id !== id));
         } catch (error) {
             console.error(error);
         }

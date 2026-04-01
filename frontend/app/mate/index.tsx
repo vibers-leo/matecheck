@@ -1,130 +1,186 @@
-import { View, Text, TouchableOpacity, Dimensions, StatusBar as RNStatusBar } from 'react-native';
-import React, { useEffect } from 'react';
-import { Link, Redirect } from 'expo-router';
-import { useUserStore } from '../../store/userStore';
-import Animated, {
-    FadeInDown,
+import { View, Text, Pressable, Dimensions, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Home, 
+  Users, 
+  Calendar, 
+  CreditCard, 
+  CheckSquare, 
+  Megaphone, 
+  ChevronRight, 
+  Plus, 
+  MessageSquare,
+  Sparkles,
+  Heart
+} from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { 
+    FadeInDown, 
     FadeInUp,
-    useSharedValue,
-    useAnimatedStyle,
-    withRepeat,
-    withTiming,
-    withDelay,
-    Easing,
-    withSequence
+    FadeInRight
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
-import { translations } from '../../constants/I18n';
+import { fetchChoreRotation, Chore } from "@/lib/api";
 
-const { width, height } = Dimensions.get('window');
-
-const REVIEWS = [
-    "룸메이트랑 안 싸우게 됐어요 ✌️",
-    "정산이 너무 편해졌어요 💸",
-    "집안일 분담이 확실해요 ✨",
-    "초대 코드로 친구 부르기 🏠",
-    "공유 달력 진짜 꿀팁! 📅",
-];
-
-const FloatingReview = ({ text, index, total }: { text: string, index: number, total: number }) => {
-    const translateY = useSharedValue(height);
-    const opacity = useSharedValue(0);
-    const [randomX] = React.useState(() => (Math.random() * 0.6 + 0.2) * width);
-    const [randomDuration] = React.useState(() => 20000 + Math.random() * 10000);
-
-    useEffect(() => {
-        const delay = index * 3000;
-        translateY.value = withDelay(
-            delay,
-            withRepeat(
-                withSequence(
-                    withTiming(height * 0.5, { duration: randomDuration, easing: Easing.linear }),
-                    withTiming(height, { duration: 0 })
-                ),
-                -1,
-                false
-            )
-        );
-        opacity.value = withDelay(
-            delay,
-            withRepeat(
-                withSequence(
-                    withTiming(0.7, { duration: 3000 }),
-                    withTiming(0.7, { duration: randomDuration - 6000 }),
-                    withTiming(0, { duration: 3000 })
-                ),
-                -1,
-                false
-            )
-        );
-    }, []);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: translateY.value }],
-        opacity: opacity.value,
-    }));
-
-    return (
-        <Animated.View
-            style={[
-                animatedStyle,
-                { position: 'absolute', left: randomX - 60, zIndex: 0 }
-            ]}
-        >
-            <View className="bg-white/60 px-4 py-2 rounded-full border border-white/50 shadow-sm">
-                <Text className="text-gray-500 text-xs font-medium">{text}</Text>
-            </View>
-        </Animated.View>
-    );
-};
+const { width } = Dimensions.get('window');
 
 export default function MateHome() {
-    const { isLoggedIn, language } = useUserStore();
-    const t = translations[language].intro;
+    const router = useRouter();
+    const [refreshing, setRefreshing] = useState(false);
 
-    if (isLoggedIn) {
-        return <Redirect href="/mate/(tabs)/home" />; // Redirect to local tabs
-    }
+    const { data: chores = [] as Chore[], refetch, isLoading } = useQuery<Chore[]>({
+        queryKey: ["chores"],
+        queryFn: fetchChoreRotation,
+        initialData: [],
+    });
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await refetch();
+        setRefreshing(false);
+    }, [refetch]);
+
+    const displayChores: Chore[] = chores.length > 0 ? chores : [
+        { id: "1", title: "거실 청소", assignee: "주노", due_date: "오늘", status: "pending" },
+        { id: "2", title: "분리수거", assignee: "민지", due_date: "내일", status: "pending" }
+    ];
 
     return (
-        <View className="flex-1 bg-orange-50/30 items-center justify-between py-20 px-6 relative overflow-hidden">
+        <ScrollView 
+            className="flex-1 bg-[#fff8f5]"
+            contentContainerClassName="pb-12"
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ff7f50" />
+            }
+        >
             <StatusBar style="dark" />
 
-            {/* Background Floating Reviews */}
-            <View className="absolute inset-0 pointer-events-none w-full h-full">
-                {REVIEWS.map((review, i) => (
-                    <FloatingReview key={i} text={review} index={i} total={REVIEWS.length} />
+            {/* 프리미엄 헤더 & 메인 배너 */}
+            <View className="bg-white rounded-b-[50px] shadow-2xl shadow-orange-100 overflow-hidden">
+                <LinearGradient
+                    colors={["#ff7f50", "#ff4500"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="pt-20 pb-24 px-8"
+                >
+                    <Animated.View entering={FadeInDown.duration(800)}>
+                        <View className="flex-row items-center justify-between mb-10">
+                            <View className="flex-row items-center gap-3">
+                                <View className="p-3 bg-white/20 rounded-[22px] border border-white/30 backdrop-blur-xl">
+                                    <Home size={24} color="#fff" strokeWidth={2.5} />
+                                </View>
+                                <Text className="text-white text-2xl font-black tracking-tight">MateCheck</Text>
+                            </View>
+                            <Pressable className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center border border-white/20">
+                                <Sparkles size={20} color="#fff" />
+                            </Pressable>
+                        </View>
+
+                        <View className="mb-8">
+                            <Text className="text-orange-100 text-lg font-bold">즐거운 공동생활의 시작</Text>
+                            <Text className="text-white text-4xl font-black mt-2 leading-[48px]">
+                                함께하는 공간,{"\n"}
+                                <Text className="text-orange-200">더 스마트하게</Text>
+                            </Text>
+                        </View>
+
+                        <Pressable 
+                            onPress={() => router.push("/mate/(tabs)/home")}
+                            className="bg-white px-10 py-5 rounded-[24px] shadow-xl shadow-orange-900/20 active:opacity-90 flex-row items-center justify-center gap-3"
+                        >
+                            <Heart size={20} color="#ff7f50" fill="#ff7f50" />
+                            <Text className="text-orange-600 text-lg font-black uppercase tracking-wider">우리 집 관리하기</Text>
+                        </Pressable>
+                    </Animated.View>
+                </LinearGradient>
+            </View>
+
+            {/* 퀵 메뉴 */}
+            <View className="px-6 -mt-10">
+                <Animated.View 
+                    entering={FadeInUp.delay(400)} 
+                    className="bg-white rounded-[32px] p-6 shadow-xl shadow-slate-200 border border-slate-50 flex-row items-center justify-around"
+                >
+                    {[
+                        { icon: Users, label: "멤버", color: "#6366f1" },
+                        { icon: Calendar, label: "일정", color: "#ec4899" },
+                        { icon: CreditCard, label: "정산", color: "#10b981" },
+                        { icon: CheckSquare, label: "집안일", color: "#f59e0b" }
+                    ].map((item, idx) => (
+                        <Pressable key={idx} className="items-center gap-2">
+                            <View className="w-14 h-14 bg-slate-50 rounded-2xl items-center justify-center">
+                                <item.icon size={22} color={item.color} />
+                            </View>
+                            <Text className="text-slate-600 text-xs font-black">{item.label}</Text>
+                        </Pressable>
+                    ))}
+                </Animated.View>
+            </View>
+
+            {/* 오늘의 할 일 */}
+            <View className="px-8 mt-12">
+                <View className="flex-row items-center justify-between mb-6">
+                    <Text className="text-slate-900 text-2xl font-black">오늘의 집안일</Text>
+                    <Pressable className="bg-orange-50 px-4 py-2 rounded-full">
+                        <Text className="text-orange-500 text-xs font-black">전체보기</Text>
+                    </Pressable>
+                </View>
+
+                {displayChores.map((chore: Chore, idx: number) => (
+                    <Animated.View 
+                        key={chore.id}
+                        entering={FadeInRight.delay(500 + (idx * 150))}
+                        className="bg-white p-6 rounded-[32px] mb-4 border border-slate-100 shadow-sm flex-row items-center"
+                    >
+                        <View className="w-14 h-14 bg-orange-50 rounded-2xl items-center justify-center mr-5">
+                            <CheckSquare size={24} color="#ff7f50" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-slate-900 font-black text-lg">{chore.title}</Text>
+                            <View className="flex-row items-center mt-1 gap-3">
+                                <View className="flex-row items-center gap-1">
+                                    <Users size={12} color="#94a3b8" />
+                                    <Text className="text-slate-400 text-xs font-bold">{chore.assignee}</Text>
+                                </View>
+                                <View className="w-1 h-1 rounded-full bg-slate-200" />
+                                <Text className="text-orange-500 text-xs font-black">{chore.due_date}</Text>
+                            </View>
+                        </View>
+                        <Pressable className="w-10 h-10 bg-slate-50 rounded-full items-center justify-center">
+                            <ChevronRight size={18} color="#cbd5e1" />
+                        </Pressable>
+                    </Animated.View>
                 ))}
             </View>
 
-            {/* Header / Hero */}
-            <Animated.View entering={FadeInDown.duration(1000).springify()} className="items-center mt-32 z-10">
-                <View className="w-40 h-40 bg-white rounded-full items-center justify-center mb-8 shadow-lg shadow-orange-100 border-4 border-white">
-                    <Text className="text-7xl">🏡</Text>
-                </View>
-                <Text className="text-orange-600 text-4xl font-extrabold tracking-tight mb-3">MateCheck</Text>
-                <Text className="text-gray-500 text-lg font-medium text-center leading-8 bg-white/50 px-4 py-2 rounded-xl">
-                    {t.tagline}
-                </Text>
-            </Animated.View>
+            {/* 공지사항 띠 배너 */}
+            <View className="px-8 mt-8">
+                <LinearGradient
+                    colors={["#1e293b", "#0f172a"]}
+                    className="rounded-[28px] p-6 flex-row items-center gap-4"
+                >
+                    <View className="w-10 h-10 bg-indigo-500 rounded-xl items-center justify-center">
+                        <Megaphone size={18} color="#fff" />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-white font-black text-sm">이번 주 관리비 정산일입니다</Text>
+                        <Text className="text-slate-400 text-[10px] mt-1 font-bold">잊지 말고 확인해 주세요!</Text>
+                    </View>
+                    <ChevronRight size={16} color="#475569" />
+                </LinearGradient>
+            </View>
 
-            {/* Buttons */}
-            <Animated.View entering={FadeInUp.delay(300).duration(1000).springify()} className="w-full gap-4 mb-10 z-10">
-                <Link href="/mate/(auth)/login" asChild>
-                    <TouchableOpacity className="w-full bg-orange-500 py-4 rounded-2xl items-center shadow-lg shadow-orange-200 active:bg-orange-600">
-                        <Text className="text-white font-bold text-lg">{t.login_btn}</Text>
-                    </TouchableOpacity>
-                </Link>
-
-                <View className="flex-row items-center justify-center mt-2">
-                    <Text className="text-gray-400 mr-2">{t.signup_prompt}</Text>
-                    <Link href="/mate/(auth)/signup" asChild>
-                        <TouchableOpacity>
-                            <Text className="text-orange-600 font-bold text-base underline">{t.signup_btn}</Text>
-                        </TouchableOpacity>
-                    </Link>
-                </View>
-            </Animated.View>
-        </View>
+            {/* 새로운 메이트 초대 */}
+            <View className="px-8 mt-8 mb-10">
+                <Pressable className="bg-white border-2 border-dashed border-slate-200 rounded-[32px] p-8 items-center justify-center gap-3">
+                    <View className="w-12 h-12 bg-slate-50 rounded-full items-center justify-center">
+                        <Plus size={24} color="#94a3b8" />
+                    </View>
+                    <Text className="text-slate-400 font-black text-base">새로운 메이트 초대하기</Text>
+                </Pressable>
+            </View>
+        </ScrollView>
     );
 }

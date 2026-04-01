@@ -20,7 +20,6 @@ export default {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
-    newArchEnabled: false,
     description: '가족, 커플, 룸메이트와 함께하는 공동 생활 관리 앱',
     primaryColor: '#FF7F50',
     privacy: 'unlisted',
