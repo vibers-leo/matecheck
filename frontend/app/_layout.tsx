@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useUserStore } from "../store/userStore";
 import TossNavBar from "../components/TossNavBar";
-import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 import Toast from 'react-native-toast-message';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { checkAutoLogin } from '../utils/auth';
@@ -14,6 +14,14 @@ import { useFonts } from 'expo-font';
 if (typeof StyleSheet.setFlag === 'function') {
     StyleSheet.setFlag('darkMode', 'class');
 }
+
+// react-native의 모든 Text에 Paperlogy-Regular 기본 적용
+// (fontWeight는 components/Text.tsx 래퍼가 올바른 파일명으로 변환)
+const originalTextRender = (Text as any).render;
+(Text as any).defaultProps = {
+    ...(Text as any).defaultProps,
+    style: { fontFamily: 'Paperlogy-Regular' },
+};
 
 export default function Layout() {
     const [fontsLoaded] = useFonts({
