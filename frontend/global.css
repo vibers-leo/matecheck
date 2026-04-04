@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Paperlogy 폰트 전용 유틸리티 — React Native Text에 className으로 적용
+   예: <Text className="font-paperlogy-bold text-lg">텍스트</Text>
+*/
+
 @layer components {
   .card-mobile {
     @apply bg-white rounded-3xl p-5 shadow-md;

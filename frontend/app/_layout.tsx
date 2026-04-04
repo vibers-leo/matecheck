@@ -8,6 +8,7 @@ import { StyleSheet, View, ActivityIndicator } from "react-native";
 import Toast from 'react-native-toast-message';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { checkAutoLogin } from '../utils/auth';
+import { useFonts } from 'expo-font';
 
 // Fix for NativeWind v4 web: Cannot manually set color scheme
 if (typeof StyleSheet.setFlag === 'function') {
@@ -15,6 +16,14 @@ if (typeof StyleSheet.setFlag === 'function') {
 }
 
 export default function Layout() {
+    const [fontsLoaded] = useFonts({
+        'Paperlogy-Regular': require('../assets/fonts/Paperlogy-4Regular.ttf'),
+        'Paperlogy-Medium': require('../assets/fonts/Paperlogy-5Medium.ttf'),
+        'Paperlogy-SemiBold': require('../assets/fonts/Paperlogy-6SemiBold.ttf'),
+        'Paperlogy-Bold': require('../assets/fonts/Paperlogy-7Bold.ttf'),
+        'Paperlogy-ExtraBold': require('../assets/fonts/Paperlogy-8ExtraBold.ttf'),
+    });
+
     const { appMode, setEmail } = useUserStore();
     const [hydrated, setHydrated] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -51,7 +60,7 @@ export default function Layout() {
     }, [setEmail]);
 
     // 로딩 중이면 스플래시 화면 표시
-    if (!hydrated || isCheckingAuth) {
+    if (!hydrated || isCheckingAuth || !fontsLoaded) {
         return (
             <View style={{ flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" color="#0066FF" />

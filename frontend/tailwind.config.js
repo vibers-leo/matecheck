@@ -19,6 +19,15 @@ module.exports = {
         'premium': '2rem',
       },
 
+      /* ── Paperlogy 폰트 패밀리 ── */
+      fontFamily: {
+        'paperlogy': ['Paperlogy-Regular'],
+        'paperlogy-medium': ['Paperlogy-Medium'],
+        'paperlogy-semibold': ['Paperlogy-SemiBold'],
+        'paperlogy-bold': ['Paperlogy-Bold'],
+        'paperlogy-extrabold': ['Paperlogy-ExtraBold'],
+      },
+
       /* ── Supanova 타이포그래피 ── */
       fontSize: {
         'heading-1': ['28px', { lineHeight: '36px', letterSpacing: '-0.02em', fontWeight: '700' }],
