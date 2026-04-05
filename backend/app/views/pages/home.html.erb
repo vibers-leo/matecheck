@@ -4,17 +4,12 @@
 
     <!-- Left: 앱 소개 -->
     <div class="flex-1 text-center md:text-left fade-in-up">
-      <!-- 배지 -->
       <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
         🏠 룸메이트 생활 관리
       </div>
-
-      <!-- 타이틀 -->
       <h1 class="text-6xl md:text-7xl font-black text-gray-900 mb-4 leading-none tracking-tight">
         메이트<span class="text-emerald-500">체크</span>
       </h1>
-
-      <!-- 서브타이틀 -->
       <p class="text-xl md:text-2xl text-gray-500 font-light mb-10 leading-relaxed">
         룸메이트와 함께하는<br />
         <span class="font-semibold text-gray-700">스마트한 공유 생활 🌿</span>
@@ -22,28 +17,28 @@
 
       <!-- 기능 목록 -->
       <div class="grid grid-cols-2 gap-4 mb-10 max-w-sm mx-auto md:mx-0 fade-in-up-delay">
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors screen-tab" data-screen="0">
           <span class="text-2xl">✅</span>
           <div>
             <p class="font-bold text-sm text-gray-800">미션 관리</p>
             <p class="text-xs text-gray-400">집안일 분배</p>
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors screen-tab" data-screen="1">
           <span class="text-2xl">💰</span>
           <div>
             <p class="font-bold text-sm text-gray-800">공동 가계부</p>
             <p class="text-xs text-gray-400">정산 자동화</p>
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors screen-tab" data-screen="2">
           <span class="text-2xl">📅</span>
           <div>
             <p class="font-bold text-sm text-gray-800">공유 일정</p>
             <p class="text-xs text-gray-400">함께 계획</p>
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:border-emerald-300 transition-colors screen-tab" data-screen="3">
           <span class="text-2xl">📋</span>
           <div>
             <p class="font-bold text-sm text-gray-800">생활 규칙</p>
@@ -59,68 +54,207 @@
       </div>
     </div>
 
-    <!-- Right: 폰 목업 -->
-    <div class="flex-1 flex justify-center fade-in-up-delay float">
-      <div class="phone-frame w-64 md:w-72">
-        <div class="phone-screen">
+    <!-- Right: 폰 목업 + 슬라이더 -->
+    <div class="flex-1 flex flex-col items-center gap-5 fade-in-up-delay">
+      <div class="phone-frame w-64 md:w-72 float">
+        <div class="phone-screen" id="phone-screen">
           <div class="phone-notch"></div>
 
-          <!-- 앱 스크린 Mock UI -->
-          <div class="w-full h-full bg-white pt-10 flex flex-col">
-            <!-- 상단 헤더 -->
-            <div class="px-5 pt-4 pb-3 flex items-center justify-between">
-              <div>
-                <p class="text-xs text-gray-400">안녕하세요 👋</p>
-                <p class="text-sm font-bold text-gray-800">우리집 Nest</p>
-              </div>
-              <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs font-bold">J</div>
-            </div>
+          <!-- 슬라이드 컨테이너 -->
+          <div class="w-full h-full overflow-hidden relative">
+            <div id="slides-wrapper" class="flex h-full transition-transform duration-500 ease-in-out">
 
-            <!-- 미션 카드 -->
-            <div class="px-4 mb-3">
-              <div class="bg-emerald-500 rounded-2xl p-4 text-white">
-                <p class="text-xs opacity-70 mb-1">오늘의 미션</p>
-                <p class="text-sm font-bold">설거지 하기 🍽️</p>
-                <div class="mt-2 bg-white/20 rounded-full h-1.5">
-                  <div class="bg-white rounded-full h-1.5 w-2/3"></div>
-                </div>
-                <p class="text-xs opacity-70 mt-1">2 / 3 완료</p>
-              </div>
-            </div>
-
-            <!-- 가계부 요약 -->
-            <div class="px-4 mb-3">
-              <div class="bg-gray-50 rounded-2xl p-4">
-                <p class="text-xs text-gray-400 mb-2">이번 달 공동 지출</p>
-                <p class="text-lg font-black text-gray-800">₩ 184,500</p>
-                <div class="flex gap-2 mt-2">
-                  <span class="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">정산 대기 2건</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 일정 목록 -->
-            <div class="px-4">
-              <p class="text-xs font-bold text-gray-400 mb-2">다가오는 일정</p>
-              <div class="space-y-2">
-                <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-3 py-2 shadow-sm">
-                  <span class="text-base">🧹</span>
+              <!-- 화면 0: 홈/미션 -->
+              <div class="min-w-full h-full bg-white pt-10 flex flex-col">
+                <div class="px-5 pt-4 pb-3 flex items-center justify-between">
                   <div>
-                    <p class="text-xs font-semibold text-gray-700">대청소의 날</p>
-                    <p class="text-xs text-gray-400">내일 오전 10시</p>
+                    <p class="text-xs text-gray-400">안녕하세요 👋</p>
+                    <p class="text-sm font-bold text-gray-800">우리집 Nest</p>
+                  </div>
+                  <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xs font-bold">J</div>
+                </div>
+                <div class="px-4 mb-3">
+                  <div class="bg-emerald-500 rounded-2xl p-4 text-white">
+                    <p class="text-xs opacity-70 mb-1">오늘의 미션</p>
+                    <p class="text-sm font-bold">설거지 하기 🍽️</p>
+                    <div class="mt-2 bg-white/20 rounded-full h-1.5">
+                      <div class="bg-white rounded-full h-1.5 w-2/3"></div>
+                    </div>
+                    <p class="text-xs opacity-70 mt-1">2 / 3 완료</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-3 py-2 shadow-sm">
-                  <span class="text-base">🛒</span>
-                  <div>
-                    <p class="text-xs font-semibold text-gray-700">장보기</p>
-                    <p class="text-xs text-gray-400">토요일 오후 2시</p>
+                <div class="px-4 mb-3">
+                  <p class="text-xs font-bold text-gray-400 mb-2">미션 목록</p>
+                  <div class="space-y-2">
+                    <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                      <span class="w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                      <p class="text-xs text-gray-400 line-through">화장실 청소</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                      <span class="w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                      <p class="text-xs text-gray-400 line-through">분리수거</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2">
+                      <span class="w-4 h-4 border-2 border-gray-300 rounded-full"></span>
+                      <p class="text-xs text-gray-700 font-medium">설거지 하기 🍽️</p>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <!-- 화면 1: 가계부 -->
+              <div class="min-w-full h-full bg-white pt-10 flex flex-col">
+                <div class="px-5 pt-4 pb-3">
+                  <p class="text-xs text-gray-400">4월</p>
+                  <p class="text-sm font-bold text-gray-800">공동 가계부 💰</p>
+                </div>
+                <div class="px-4 mb-3">
+                  <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white">
+                    <p class="text-xs opacity-70 mb-1">이번 달 총 지출</p>
+                    <p class="text-2xl font-black">₩ 184,500</p>
+                    <p class="text-xs opacity-70 mt-1">1인당 ₩ 61,500</p>
+                  </div>
+                </div>
+                <div class="px-4">
+                  <p class="text-xs font-bold text-gray-400 mb-2">최근 내역</p>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-base">🛒</span>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700">마트 장보기</p>
+                          <p class="text-xs text-gray-400">지연</p>
+                        </div>
+                      </div>
+                      <p class="text-xs font-bold text-gray-700">-45,000</p>
+                    </div>
+                    <div class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-base">🍕</span>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700">저녁 배달</p>
+                          <p class="text-xs text-gray-400">민준</p>
+                        </div>
+                      </div>
+                      <p class="text-xs font-bold text-gray-700">-32,000</p>
+                    </div>
+                    <div class="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-base">🧴</span>
+                        <div>
+                          <p class="text-xs font-semibold text-gray-700">생활용품</p>
+                          <p class="text-xs text-gray-400">나</p>
+                        </div>
+                      </div>
+                      <p class="text-xs font-bold text-gray-700">-28,500</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 화면 2: 일정 -->
+              <div class="min-w-full h-full bg-white pt-10 flex flex-col">
+                <div class="px-5 pt-4 pb-3">
+                  <p class="text-xs text-gray-400">이번 주</p>
+                  <p class="text-sm font-bold text-gray-800">공유 일정 📅</p>
+                </div>
+                <div class="px-4">
+                  <div class="space-y-2">
+                    <div class="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-3">
+                      <div class="text-center min-w-8">
+                        <p class="text-xs text-emerald-600 font-bold">오늘</p>
+                        <p class="text-lg font-black text-emerald-600">5</p>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-800">🧹 대청소의 날</p>
+                        <p class="text-xs text-gray-400">오전 10:00 · 전원 참여</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="text-center min-w-8">
+                        <p class="text-xs text-gray-400">토</p>
+                        <p class="text-lg font-black text-gray-600">7</p>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-800">🛒 장보기</p>
+                        <p class="text-xs text-gray-400">오후 2:00 · 민준, 지연</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="text-center min-w-8">
+                        <p class="text-xs text-gray-400">일</p>
+                        <p class="text-lg font-black text-gray-600">8</p>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-800">🍳 같이 밥 먹기</p>
+                        <p class="text-xs text-gray-400">저녁 7:00 · 전원</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="text-center min-w-8">
+                        <p class="text-xs text-gray-400">화</p>
+                        <p class="text-lg font-black text-gray-600">10</p>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-800">💡 월세 납부일</p>
+                        <p class="text-xs text-gray-400">자동 알림 설정됨</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 화면 3: 생활 규칙 -->
+              <div class="min-w-full h-full bg-white pt-10 flex flex-col">
+                <div class="px-5 pt-4 pb-3">
+                  <p class="text-xs text-gray-400">우리집</p>
+                  <p class="text-sm font-bold text-gray-800">생활 규칙 📋</p>
+                </div>
+                <div class="px-4">
+                  <div class="space-y-2">
+                    <div class="bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm">🔇</span>
+                        <p class="text-xs font-bold text-gray-800">취침 시간</p>
+                      </div>
+                      <p class="text-xs text-gray-500">밤 11시 이후 조용히 하기</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm">🧹</span>
+                        <p class="text-xs font-bold text-gray-800">청소 순번</p>
+                      </div>
+                      <p class="text-xs text-gray-500">매주 돌아가며 공용공간 청소</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm">🚿</span>
+                        <p class="text-xs font-bold text-gray-800">샤워 시간</p>
+                      </div>
+                      <p class="text-xs text-gray-500">1인당 20분 이내</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl px-3 py-3">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm">🍽️</span>
+                        <p class="text-xs font-bold text-gray-800">주방 사용</p>
+                      </div>
+                      <p class="text-xs text-gray-500">사용 후 즉시 설거지</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- 슬라이드 인디케이터 -->
+      <div class="flex gap-2" id="indicators">
+        <button class="w-6 h-2 rounded-full bg-emerald-500 transition-all indicator" data-index="0"></button>
+        <button class="w-2 h-2 rounded-full bg-gray-200 transition-all indicator" data-index="1"></button>
+        <button class="w-2 h-2 rounded-full bg-gray-200 transition-all indicator" data-index="2"></button>
+        <button class="w-2 h-2 rounded-full bg-gray-200 transition-all indicator" data-index="3"></button>
       </div>
     </div>
 
@@ -131,3 +265,41 @@
 <footer class="text-center py-8 text-gray-400 text-sm">
   © 2026 메이트체크 — <a href="https://vibers.co.kr" class="hover:text-emerald-500 transition-colors">계발자들 (Vibers)</a>
 </footer>
+
+<script>
+  let current = 0;
+  const total = 4;
+  const wrapper = document.getElementById('slides-wrapper');
+  const indicators = document.querySelectorAll('.indicator');
+  const tabs = document.querySelectorAll('.screen-tab');
+
+  function goTo(index) {
+    current = index;
+    wrapper.style.transform = `translateX(-${index * 100}%)`;
+    indicators.forEach((el, i) => {
+      el.classList.toggle('bg-emerald-500', i === index);
+      el.classList.toggle('w-6', i === index);
+      el.classList.toggle('bg-gray-200', i !== index);
+      el.classList.toggle('w-2', i !== index);
+    });
+    tabs.forEach((el, i) => {
+      el.classList.toggle('border-emerald-300', i === index);
+      el.classList.toggle('border-gray-100', i !== index);
+    });
+  }
+
+  indicators.forEach(el => el.addEventListener('click', () => goTo(+el.dataset.index)));
+  tabs.forEach(el => el.addEventListener('click', () => goTo(+el.dataset.screen)));
+
+  // 자동 슬라이드
+  setInterval(() => goTo((current + 1) % total), 3000);
+
+  // 스와이프
+  let startX = 0;
+  const screen = document.getElementById('phone-screen');
+  screen.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+  screen.addEventListener('touchend', e => {
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goTo(diff > 0 ? Math.min(current+1, total-1) : Math.max(current-1, 0));
+  });
+</script>
