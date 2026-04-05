@@ -52,4 +52,10 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
+
+  # Vibers 통합 어드민
+  namespace :api do
+    get  "vibers_admin",           to: "vibers_admin#index"
+    get  "vibers_admin/resource",  to: "vibers_admin#resource"
+  end
 end
