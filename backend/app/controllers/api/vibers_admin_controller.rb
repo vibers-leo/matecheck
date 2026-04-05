@@ -1,7 +1,4 @@
-class Api::VibersAdminController < ApplicationController
-  skip_before_action :authenticate_user!, raise: false
-  skip_before_action :verify_authenticity_token, raise: false
-
+class Api::VibersAdminController < ActionController::API
   before_action :verify_admin_secret
 
   def index
