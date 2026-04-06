@@ -4,7 +4,7 @@
 .env
 .ruby-lsp/
 
-# Frontend (Expo)
+# Frontend / Mobile (Expo)
 frontend/node_modules/
 frontend/.expo/
 frontend/dist/
@@ -12,6 +12,24 @@ frontend/web-build/
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
+frontend/.expo-shared/
+frontend/ios/
+frontend/android/
+
+# Mobile (Expo)
+mobile/
+mobile/node_modules/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/web-build/
+mobile/ios/
+mobile/android/
+
+# Toss Mini App
+toss-app/node_modules/
+toss-app/.expo/
+toss-app/dist/
 
 # Backend (Rails)
 backend/node_modules/
