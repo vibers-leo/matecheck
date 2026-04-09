@@ -32,4 +32,5 @@ jobs:
              docker compose -p matecheck ps && \
              sleep 10 && \
              docker logs matecheck-api --tail 30 2>&1 && \
-             echo '✅ MateCheck 배포 완료'"
+             curl -sf http://localhost:4010/up && echo '✅ MateCheck 배포 완료' || echo '⚠️ 헬스체크 실패' && \
+             docker exec npm-app-1 nginx -s reload || true"
