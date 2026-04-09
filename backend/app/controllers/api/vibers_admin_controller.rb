@@ -4,7 +4,7 @@ class Api::VibersAdminController < ActionController::API
   def index
     stats = {
       totalUsers: User.count,
-      contentCount: Nest.count,
+      contentCount: (Goal.count rescue 0),
       mau: 0,
       recentSignups: User.where("created_at > ?", 7.days.ago).count
     }
