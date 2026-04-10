@@ -34,3 +34,14 @@ jobs:
              docker logs matecheck-api --tail 30 2>&1 && \
              curl -sf http://localhost:4010/up && echo '✅ MateCheck 배포 완료' || echo '⚠️ 헬스체크 실패' && \
              docker exec npm-app-1 nginx -s reload || true"
+
+      - name: Cleanup old images
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.NCP_HOST }}
+          username: ${{ secrets.NCP_USER }}
+          key: ${{ secrets.NCP_SSH_KEY }}
+          script: |
+            docker image prune -af --filter "until=24h"
+            docker builder prune -af --filter "until=24h"
